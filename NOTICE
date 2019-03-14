@@ -1,0 +1,18 @@
+Copyright 2019 LinkedIn Corporation
+All Rights Reserved.
+
+Licensed under the BSD 2-Clause License (the "License").
+See LICENSE in the project root for license information.
+
+================================================================================
+
+This product includes/uses Gradle/gradle (https://github.com/gradle/gradle)
+Copyright 2019 Gradle
+License: Apache-2.0
+
+================================================================================
+
+In addition, this product automatically loads third party code from an external repository
+using the Gradle build system. Such third party code is subject to other license
+terms than as set forth above. In addition, such third party code may also
+depend on and load multiple tiers of dependencies.
