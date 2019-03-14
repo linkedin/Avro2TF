@@ -1,0 +1,90 @@
+{
+  "features": [
+    {
+      "inputFeatureInfo": {
+        "columnExpr": "review",
+        "transformConfig": {
+          "tokenization": {
+            "removeStopWords": true
+          }
+        }
+      },
+      "outputTensorInfo": {
+        "name": "wordSeq",
+        "dtype": "long",
+        "shape": [
+          -1
+        ]
+      }
+    },
+    {
+      "inputFeatureInfo": {
+        "columnExpr": "review",
+        "transformConfig": {
+          "hashInfo": {
+            "hashBucketSize": 1000,
+            "numHashFunctions": 4
+          }
+        }
+      },
+      "outputTensorInfo": {
+        "name": "wordSeq_hashed",
+        "dtype": "long",
+        "shape": [
+          4
+        ]
+      }
+    },
+    {
+      "inputFeatureInfo": {
+        "columnExpr": "words.term"
+      },
+      "outputTensorInfo": {
+        "name": "words_term",
+        "dtype": "long",
+        "shape": [
+          -1
+        ]
+      }
+    },
+    {
+      "inputFeatureInfo": {
+        "columnConfig": {
+          "words": {
+            "whitelist": [
+              "*"
+            ]
+          },
+          "wideFeatures": {
+            "blacklist": [
+              "wideFeatures"
+            ]
+          }
+        },
+        "transformConfig": {
+          "hashInfo": {
+            "hashBucketSize": 100,
+            "combiner": "AVG"
+          }
+        }
+      },
+      "outputTensorInfo": {
+        "name": "words_wideFeatures",
+        "dtype": "sparseVector",
+        "shape": []
+      }
+    }
+  ],
+  "labels": [
+    {
+      "inputFeatureInfo": {
+        "columnExpr": "label"
+      },
+      "outputTensorInfo": {
+        "name": "response",
+        "dtype": "int",
+        "shape": []
+      }
+    }
+  ]
+}

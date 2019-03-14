@@ -1,0 +1,31 @@
+{
+  "features": [
+    {
+      "inputFeatureInfo": {
+        "columnExpr": "test_value",
+        "transformConfig": {
+          "testInfo": {
+            "testInfo": "test_value"
+          }
+        }
+      },
+      "outputTensorInfo": {
+        "name": "test_value",
+        "dtype": "long",
+        "shape": []
+      }
+    }
+  ],
+  "labels": [
+    {
+      "inputFeatureInfo": {
+        "columnExpr": "test_value"
+      },
+      "outputTensorInfo": {
+        "name": "test_value",
+        "dtype": "long",
+        "shape": []
+      }
+    }
+  ]
+}

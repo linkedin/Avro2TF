@@ -1,0 +1,20 @@
+apply plugin: 'scala'
+apply plugin: "eclipse"
+apply plugin: "idea"
+
+dependencies {
+  compile(deps.external.avroMapred)
+  compile(deps.external.jacksonDataBindFasterXML)
+  compile(deps.external.scopt)
+  compile(deps.external.sparkAvro)
+  compile(deps.external.sparkCore) {
+    // The avro-mapred in sparkCore defaults to hadoop1 jar so it will cause issues in unit test
+    exclude module: 'avro-mapred'
+  }
+  compile(deps.external.sparkMllib)
+  compile(deps.external.sparkSql) {
+    // The avro-mapred in sparkSql defaults to hadoop1 jar so it will cause issues in unit test
+    exclude module: 'avro-mapred'
+  }
+  testCompile(deps.external.testng)
+}
