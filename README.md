@@ -1,5 +1,7 @@
 # Avro2TF [![Build Status](https://travis-ci.org/linkedin/Avro2TF.svg?branch=master)](https://travis-ci.org/linkedin/Avro2TF)
 
+![](https://github.com/linkedin/Avro2TF/blob/master/avro2tf-logo.png)
+
 [Tensors](https://www.tensorflow.org/guide/tensors) are by now an industry-wide established way to express values in deep learning models.
 However, existing training data are not ready to be directly parsed as tensors.
 Especially for sparse features, the indices of sparse features are often represented using human-readable strings rather than integer/long ids used by tensors in [TensorFlow](https://github.com/tensorflow/tensorflow) or other deep learning frameworks.
