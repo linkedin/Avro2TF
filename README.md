@@ -95,4 +95,4 @@ The below table shows all the available configuration names and their detailed e
 | shape              | no        | []                                         | The expected shape of output tensor, examples: []: scalar; sparse vector; [-1] : 1D array of any length; [6]: 1D array with size 6; [2, 3]: matrix with 2 rows and 3 columns.      |
 
 ## Avro2TF Examples
-[Avro2TF Official Tutorial](https://github.com/linkedin/Avro2TF/wiki/Avro2TF-Official-Tutorial)
+Please feel free to take a look at our [Avro2TF Official Tutorial](https://github.com/linkedin/Avro2TF/wiki/Avro2TF-Official-Tutorial).
