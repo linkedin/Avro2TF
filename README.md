@@ -42,8 +42,7 @@ Thus, the supported input primitive types include:
 4. String
 5. bytes (for multimedia data such as image, audio, and video)
 6. boolean
-7. enum
-8. Array[NTV]
+7. Array[NTV]
 
 Arrays of primitive types with any rank are supported.
 
