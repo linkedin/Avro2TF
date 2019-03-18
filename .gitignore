@@ -1,0 +1,4 @@
+.gradle/
+.idea/
+Avro2TF-OSS.iml
+build/
