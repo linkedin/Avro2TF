@@ -3,10 +3,9 @@ package com.linkedin.avro2tf.parsers
 import java.io.File
 
 import scala.collection.mutable
-
 import com.linkedin.avro2tf.configs.{Feature, InputFeatureInfo, OutputTensorInfo, TensorizeInConfiguration}
+import com.linkedin.avro2tf.utils.Constants
 import com.linkedin.avro2tf.utils.ConstantsForTest._
-
 import org.testng.Assert._
 import org.testng.annotations.Test
 
@@ -124,6 +123,26 @@ class TensorizeInJobParamsParserTest {
   }
 
   /**
+   * Test that the parsing fails when incorrect execution mode is passed
+   *
+   */
+  @Test(expectedExceptions = Array(classOf[IllegalArgumentException]))
+  def testAvro2tfParsingFailure(): Unit = {
+
+    val tensorizeInConfig = new File(
+      getClass.getClassLoader.getResource(TENSORIZEIN_CONFIG_PATH_VALUE_2).getFile
+    ).getAbsolutePath
+
+    val params = Array(
+      INPUT_PATHS_NAME, INPUT_PATHS_VALUE,
+      WORKING_DIRECTORY_NAME, WORKING_DIRECTORY_VALUE,
+      TENSORIZEIN_CONFIG_PATH_NAME, tensorizeInConfig,
+      EXECUTION_MODE, "incorrect"
+    )
+    TensorizeInJobParamsParser.parse(params)
+  }
+
+  /**
    * Get TensorizeIn command line arguments
    *
    * @return A sequence of String
@@ -162,9 +181,11 @@ class TensorizeInJobParamsParserTest {
       externalFeaturesListPath = EXTERNAL_FEATURE_LIST_PATH_VALUE,
       tensorizeInConfig = expectedTensorizeInConfig,
       isTrainMode = ENABLE_TRAIN_MODE_VALUE.toBoolean,
+      executionMode = Constants.TEST_EXECUTION_MODE,
       enableCache = ENABLE_CACHE_VALUE.toBoolean,
       skipConversion = SKIP_CONVERSION_VALUE.toBoolean,
-      outputFormat = AVRO_RECORD.toString
+      outputFormat = AVRO_RECORD.toString,
+      extraColumnsToKeep = Seq.empty
     )
   }
 
@@ -235,6 +256,7 @@ class TensorizeInJobParamsParserTest {
     assertEquals(actualParams.inputDaysRange, expectedParams.inputDaysRange)
     assertEquals(actualParams.inputPaths, expectedParams.inputPaths)
     assertEquals(actualParams.isTrainMode, expectedParams.isTrainMode)
+    assertEquals(actualParams.executionMode, expectedParams.executionMode)
     assertEquals(actualParams.minParts, expectedParams.minParts)
     assertEquals(actualParams.numOfOutputFiles, expectedParams.numOfOutputFiles)
     assertEquals(actualParams.skipConversion, expectedParams.skipConversion)

@@ -1,8 +1,10 @@
 package com.linkedin.avro2tf.jobs
 
 import java.nio.charset.StandardCharsets.UTF_8
+
 import scala.collection.mutable
 import scala.io.Source
+
 import com.linkedin.avro2tf.configs.DataType
 import com.linkedin.avro2tf.helpers.TensorizeInConfigHelper
 import com.linkedin.avro2tf.parsers.TensorizeInParams
@@ -12,6 +14,7 @@ import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.sql.expressions.UserDefinedFunction
 import org.apache.spark.sql.functions.udf
+import org.apache.spark.sql.types.StringType
 import org.apache.spark.sql.{Column, DataFrame, Row}
 import org.slf4j.{Logger, LoggerFactory}
 
@@ -35,9 +38,14 @@ class FeatureIndicesConversion {
 
     columnFeatureMapping.foreach {
       case (columnName, featureMapping) =>
-        if (CommonUtils.isArrayOfString(dataFrameSchema(columnName).dataType)) {
+        if (CommonUtils.isArrayOfString(dataFrameSchema(columnName).dataType) ||
+          dataFrameSchema(columnName).dataType.isInstanceOf[StringType]) {
           if (outputTensorDataTypes(columnName) == DataType.int || outputTensorDataTypes(columnName) == DataType.long) {
-            convertedColumns.append(convertStringSeqToIdSeq(featureMapping)(dataFrame(columnName)).name(columnName))
+            if(dataFrameSchema(columnName).dataType.isInstanceOf[StringType]){
+              convertedColumns.append(convertStringToId(featureMapping)(dataFrame(columnName)).name(columnName))
+            } else {
+              convertedColumns.append(convertStringSeqToIdSeq(featureMapping)(dataFrame(columnName)).name(columnName))
+            }
             convertedColumnNames.add(columnName)
           } else {
             logger.warn(
@@ -153,6 +161,27 @@ class FeatureIndicesConversion {
           Seq(cardinality)
         } else {
           stringSeq.map(word => featureMapping.getOrElse(word, cardinality))
+        }
+      }
+    }
+  }
+
+  /**
+   * Spark UDF function to map a String to an Id
+   *
+   * @param featureMapping The mapping of word to id
+   * @return A Spark udf
+   */
+  private def convertStringToId(featureMapping: Map[String, Long]): UserDefinedFunction = {
+
+    udf {
+      stringValue: String => {
+        val cardinality = featureMapping.size.toLong
+
+        if (stringValue == null) {
+          cardinality
+        } else {
+          featureMapping.getOrElse(stringValue, cardinality)
         }
       }
     }

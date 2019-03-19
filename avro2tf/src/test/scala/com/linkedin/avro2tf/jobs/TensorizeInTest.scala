@@ -4,8 +4,7 @@ import java.io.{File, FileOutputStream, PrintWriter}
 
 import com.linkedin.avro2tf.parsers.TensorizeInJobParamsParser
 import com.linkedin.avro2tf.utils.ConstantsForTest._
-import com.linkedin.avro2tf.utils.WithLocalSparkSession
-
+import com.linkedin.avro2tf.utils.{Constants, WithLocalSparkSession}
 import org.apache.commons.io.FileUtils
 import org.testng.Assert._
 import org.testng.annotations.{DataProvider, Test}
@@ -51,18 +50,39 @@ class TensorizeInTest extends WithLocalSparkSession {
       close()
     }
 
-    val params = Array(
+    val trainingParams = Array(
       INPUT_PATHS_NAME, inputPath,
       WORKING_DIRECTORY_NAME, workingDirectory,
       TENSORIZEIN_CONFIG_PATH_NAME, tensorizeInConfig,
       EXTERNAL_FEATURE_LIST_PATH_NAME, externalFeatureListFullPath
     )
-    val tensorizeInParams = TensorizeInJobParamsParser.parse(params)
+    val tensorizeInTrainingParams = TensorizeInJobParamsParser.parse(trainingParams)
 
-    TensorizeIn.run(session, tensorizeInParams)
+    TensorizeIn.run(session, tensorizeInTrainingParams)
+    assertTrue(new File(s"${tensorizeInTrainingParams.workingDir.trainingDataPath}/_SUCCESS").exists())
+    assertTrue(new File(tensorizeInTrainingParams.workingDir.tensorMetadataPath).exists())
+    assertTrue(new File(tensorizeInTrainingParams.workingDir.featureListPath).exists())
 
-    assertTrue(new File(s"${tensorizeInParams.workingDir.trainingDataPath}/_SUCCESS").exists())
-    assertTrue(new File(tensorizeInParams.workingDir.tensorMetadataPath).exists())
-    assertTrue(new File(tensorizeInParams.workingDir.featureListPath).exists())
+    val validationParams = Array(
+      INPUT_PATHS_NAME, inputPath,
+      WORKING_DIRECTORY_NAME, workingDirectory,
+      TENSORIZEIN_CONFIG_PATH_NAME, tensorizeInConfig,
+      EXECUTION_MODE, Constants.VALIDATION_EXECUTION_MODE
+    )
+    val tensorizeInValidationParams = TensorizeInJobParamsParser.parse(validationParams)
+
+    TensorizeIn.run(session, tensorizeInValidationParams)
+    assertTrue(new File(s"${tensorizeInValidationParams.workingDir.validationDataPath}/_SUCCESS").exists())
+
+    val testParams = Array(
+      INPUT_PATHS_NAME, inputPath,
+      WORKING_DIRECTORY_NAME, workingDirectory,
+      TENSORIZEIN_CONFIG_PATH_NAME, tensorizeInConfig,
+      EXECUTION_MODE, Constants.TEST_EXECUTION_MODE
+    )
+    val tensorizeInTestParams = TensorizeInJobParamsParser.parse(testParams)
+
+    TensorizeIn.run(session, tensorizeInTestParams)
+    assertTrue(new File(s"${tensorizeInTestParams.workingDir.testDataPath}/_SUCCESS").exists())
   }
 }

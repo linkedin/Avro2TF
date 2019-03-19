@@ -30,7 +30,8 @@ class FeatureExtractionTest extends WithLocalSparkSession {
     val params = Array(
       INPUT_PATHS_NAME, INPUT_TEXT_FILE_PATHS,
       WORKING_DIRECTORY_NAME, WORKING_DIRECTORY_FEATURE_EXTRACTION_TEXT,
-      TENSORIZEIN_CONFIG_PATH_NAME, tensorizeInConfig
+      TENSORIZEIN_CONFIG_PATH_NAME, tensorizeInConfig,
+      EXTRA_COLUMNS_TO_KEEP_NAME, EXTRA_COLUMNS_TO_KEEP_VALUE
     )
 
     val dataFrame = session.read.avro(INPUT_TEXT_FILE_PATHS)

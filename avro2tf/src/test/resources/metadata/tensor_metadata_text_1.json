@@ -1,5 +1,10 @@
 {
   "features" : [ {
+    "name" : "firstWord",
+    "dtype" : "long",
+    "shape" : [ ],
+    "cardinality" : 6
+  }, {
     "name" : "wordSeq",
     "dtype" : "long",
     "shape" : [ -1 ],

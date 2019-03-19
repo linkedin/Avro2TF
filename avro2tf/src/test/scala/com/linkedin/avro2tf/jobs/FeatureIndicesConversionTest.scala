@@ -22,8 +22,7 @@ class FeatureIndicesConversionTest extends WithLocalSparkSession {
   @DataProvider
   def testData():Array[Array[Any]] = {
     Array(
-      Array(AVRO_RECORD),
-      Array(TF_RECORD)
+      Array(AVRO_RECORD)
     )
   }
 
@@ -38,14 +37,18 @@ class FeatureIndicesConversionTest extends WithLocalSparkSession {
     ).getAbsolutePath
     FileUtils.deleteDirectory(new File(WORKING_DIRECTORY_INDICES_CONVERSION))
 
-    val params = Array(
+    val params = Seq(
       INPUT_PATHS_NAME, INPUT_TEXT_FILE_PATHS,
       WORKING_DIRECTORY_NAME, WORKING_DIRECTORY_INDICES_CONVERSION,
       TENSORIZEIN_CONFIG_PATH_NAME, tensorizeInConfig,
       OUTPUT_FORMAT_NAME, outputFormat
     )
     val dataFrame = session.read.avro(INPUT_TEXT_FILE_PATHS)
-    val tensorizeInParams = TensorizeInJobParamsParser.parse(params)
+    val tensorizeInParams = if(outputFormat == TF_RECORD){
+      TensorizeInJobParamsParser.parse(params)
+    } else {
+      TensorizeInJobParamsParser.parse(params ++ Seq(EXTRA_COLUMNS_TO_KEEP_NAME, EXTRA_COLUMNS_TO_KEEP_VALUE))
+    }
 
     val dataFrameExtracted = (new FeatureExtraction).run(dataFrame, tensorizeInParams)
     val dataFrameTransformed = (new FeatureTransformation).run(dataFrameExtracted, tensorizeInParams)
@@ -57,6 +60,7 @@ class FeatureIndicesConversionTest extends WithLocalSparkSession {
     // check if the type of "wordSeq" column is the expected Seq[Long]
     val convertedTextColummType = convertedDataFrame.schema(FEATURE_WORD_SEQ_COL_NAME).dataType
     assertTrue(CommonUtils.isArrayOfLong(convertedTextColummType))
+    assertTrue(convertedDataFrame.schema(FEATURE_FIRST_WORD_COL_NAME).dataType.isInstanceOf[LongType])
 
     // check if the type of "words_wideFeatures" column is the expected SparseVector type
     val convertedNTVColummType = convertedDataFrame.schema(FEATURE_WORDS_WIDE_FEATURES_COL_NAME).dataType

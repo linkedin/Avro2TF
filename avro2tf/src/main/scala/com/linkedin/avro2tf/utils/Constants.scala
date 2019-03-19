@@ -10,6 +10,7 @@ object Constants {
   final val AVRO_RECORD = "avro"
   final val BLACKLIST = "blacklist"
   final val COLUMN_NAME = "columnName"
+  final val COLUMN_NAME_ALIAS_DELIMITER = ":"
   final val DEFAULT_TOKENIZER_DELIMITER_REGEX: String = "\\W"
   final val DISABLE_DELETE_SOURCE = false
   final val EMPTY_AVRO_NAME_SPACE = ""
@@ -42,6 +43,10 @@ object Constants {
   final val TEST_DATA_DIR_NAME = "testData"
   final val TOKENIZATION_CONFIG = "tokenization"
   final val TRAINING_DATA_DIR_NAME = "trainingData"
+  final val VALIDATION_DATA_DIR_NAME = "validationData"
+  final val TRAINING_EXECUTION_MODE = "training"
+  final val VALIDATION_EXECUTION_MODE = "validation"
+  final val TEST_EXECUTION_MODE = "test"
   final val VALUES = "values"
   final val WHITELIST = "whitelist"
   final val WILD_CARD = "*"

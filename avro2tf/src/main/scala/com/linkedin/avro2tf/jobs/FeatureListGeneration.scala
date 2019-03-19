@@ -5,12 +5,12 @@ import java.nio.charset.StandardCharsets.UTF_8
 
 import scala.collection.mutable
 
-import com.linkedin.avro2tf.configs.DataType
 import com.linkedin.avro2tf.helpers.TensorizeInConfigHelper
 import com.linkedin.avro2tf.parsers.TensorizeInParams
 import com.linkedin.avro2tf.utils.CommonUtils
 import com.linkedin.avro2tf.utils.Constants._
 import org.apache.hadoop.fs.{FileSystem, FileUtil, Path}
+import org.apache.spark.sql.types.StringType
 import org.apache.spark.sql.{DataFrame, Row}
 
 /**
@@ -125,9 +125,17 @@ class FeatureListGeneration {
                 Seq.empty
               }
             } else if (CommonUtils.isArrayOfString(dataFrameSchema(colName).dataType) &&
-              (outputTensorDataTypes(colName) == DataType.int || outputTensorDataTypes(colName) == DataType.long)) {
+              CommonUtils.isIntegerTensor(outputTensorDataTypes(colName))) {
               val strings = row.getAs[Seq[String]](colName)
               if (strings != null) strings.map(string => TensorizeIn.FeatureListEntry(colName, string)) else Seq.empty
+            } else if (dataFrameSchema(colName).dataType.isInstanceOf[StringType] &&
+              CommonUtils.isIntegerTensor(outputTensorDataTypes(colName))) {
+              val string = row.getAs[String](colName)
+              if (string != null) {
+                Seq(TensorizeIn.FeatureListEntry(colName, string))
+              } else {
+                Seq.empty
+              }
             }
             else {
               Seq.empty

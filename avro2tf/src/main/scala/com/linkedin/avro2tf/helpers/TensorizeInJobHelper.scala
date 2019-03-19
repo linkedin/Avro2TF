@@ -6,7 +6,7 @@ import com.databricks.spark.avro._
 import com.linkedin.avro2tf.configs.{DataType, Feature}
 import com.linkedin.avro2tf.parsers.TensorizeInParams
 import com.linkedin.avro2tf.utils.Constants._
-import com.linkedin.avro2tf.utils.{CommonUtils, IOUtils}
+import com.linkedin.avro2tf.utils.{CommonUtils, Constants, IOUtils}
 import org.apache.spark.sql.expressions.UserDefinedFunction
 import org.apache.spark.sql.functions.{expr, udf}
 import org.apache.spark.sql._
@@ -48,7 +48,11 @@ object TensorizeInJobHelper {
    */
   def saveDataToHDFS(dataFrame: DataFrame, params: TensorizeInParams): Unit = {
 
-    val outputPath = if (params.isTrainMode) params.workingDir.trainingDataPath else params.workingDir.testDataPath
+    val outputPath = params.executionMode match {
+      case TRAINING_EXECUTION_MODE => params.workingDir.trainingDataPath
+      case VALIDATION_EXECUTION_MODE => params.workingDir.validationDataPath
+      case TEST_EXECUTION_MODE => params.workingDir.testDataPath
+    }
 
     // Get a Spark DataFrame based on whether user specifies the number of output files; if not specify, the number is set to negative
     val dataFrameRepartitioned =
@@ -66,7 +70,8 @@ object TensorizeInJobHelper {
     if (params.outputFormat.equals(TF_RECORD)) {
       val dataFramePrepared = prepareTFRecord(dataFrameRepartitioned, params)
       // SequenceExample record type supports array of array data type to be saved as TFRecord
-      dataFramePrepared.write.mode("overwrite").format("tfrecords").option("recordType", "SequenceExample").save(outputPath)
+      dataFramePrepared.write.mode("overwrite").format("tfrecords").option("recordType", "SequenceExample")
+        .save(outputPath)
     } else {
       dataFrameRepartitioned.write.mode(SaveMode.Overwrite).avro(outputPath)
     }
@@ -105,6 +110,13 @@ object TensorizeInJobHelper {
         if (checkNewColNameOverlapWithExistingCols(tensor, allExistingColumnNames)) {
           throw new IllegalArgumentException(s"Output tensor name: $tensorName already exist in the original data frame column name.")
         }
+      }
+    }
+    params.extraColumnsToKeep.foreach {
+      columnName => if(columnName.contains(Constants.COLUMN_NAME_ALIAS_DELIMITER)){
+        val exprAndAlias = columnName.trim.split(Constants.COLUMN_NAME_ALIAS_DELIMITER)
+        require(exprAndAlias.length == 2, s"Invalid column name specified: $columnName in --extra-columns-to-keep")
+        require(!outputTensors.contains(exprAndAlias.last), s"Column alias: ${exprAndAlias.last} already used by output tensors")
       }
     }
   }
@@ -163,7 +175,8 @@ object TensorizeInJobHelper {
         }
     }
 
-    val nonConvertedColumns = dataFrame.columns.filter(colName => !convertedColumnNames.contains(colName)).map(dataFrame(_))
+    val nonConvertedColumns = dataFrame.columns.filter(colName => !convertedColumnNames.contains(colName))
+      .map(dataFrame(_))
     dataFrame.select(nonConvertedColumns ++ newConvertedColumns: _*)
   }
 

@@ -14,6 +14,9 @@ object ConstantsForTest {
   final val ENABLE_SHUFFLE_VALUE = "false"
   final val ENABLE_TRAIN_MODE_NAME = "--train-mode"
   final val ENABLE_TRAIN_MODE_VALUE = "false"
+  final val EXTRA_COLUMNS_TO_KEEP_NAME = "--extra-columns-to-keep"
+  final val EXTRA_COLUMNS_TO_KEEP_VALUE = "review,words.term:terms"
+  final val FEATURE_FIRST_WORD_COL_NAME = "firstWord"
   final val FEATURE_WORD_SEQ_COL_NAME = "wordSeq"
   final val FEATURE_WORD_SEQ_HASHED_COL_NAME = "wordSeq_hashed"
   final val FEATURE_WORDS_WIDE_FEATURES_COL_NAME = "words_wideFeatures"
@@ -67,4 +70,5 @@ object ConstantsForTest {
   final val EXTERNAL_FEATURE_LIST_PATH_VALUE = "/tmp/external-feature-list"
   final val SPARSE_VECTOR_INDICES_FIELD_NAME = "indices"
   final val SPARSE_VECTOR_VALUES_FIELD_NAME = "values"
+  final val EXECUTION_MODE = "--execution-mode"
 }

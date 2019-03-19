@@ -18,6 +18,7 @@ import com.linkedin.avro2tf.utils.Constants._
  * @param externalFeaturesListPath Path of external feature list supplied by the user
  * @param tensorizeInConfig TensorizeIn configuration for features and labels to be tensorized
  * @param isTrainMode Whether preparing training data or test data
+ * @param executionMode One of "train", "validate" or "test"
  * @param enableCache Whether to enable caching the intermediate Spark DataFrame result
  * @param skipConversion Indicate whether to skip the conversion step
  * @param outputFormat Output format of tensorized data, e.g. Avro or TFRecord
@@ -33,9 +34,11 @@ case class TensorizeInParams(
   externalFeaturesListPath: String,
   tensorizeInConfig: TensorizeInConfiguration,
   isTrainMode: Boolean,
+  executionMode: String,
   enableCache: Boolean,
   skipConversion: Boolean,
-  outputFormat: String
+  outputFormat: String,
+  extraColumnsToKeep: Seq[String]
 )
 
 /**
@@ -46,6 +49,7 @@ case class TensorizeInParams(
 case class WorkingDirectory(rootPath: String) {
 
   val trainingDataPath = s"$rootPath/$TRAINING_DATA_DIR_NAME"
+  val validationDataPath = s"$rootPath/$VALIDATION_DATA_DIR_NAME"
   val testDataPath = s"$rootPath/$TEST_DATA_DIR_NAME"
   val featureListPath = s"$rootPath/$FEATURE_LIST_DIR_NAME"
   val schemaFilePath = s"$rootPath/$SCHEMA_FILE_NAME"
@@ -177,8 +181,25 @@ object TensorizeInJobParamsParser {
       .action((isTrainMode, tensorizeInParams) => tensorizeInParams.copy(isTrainMode = isTrainMode))
       .optional()
       .text(
-        """Optional.
+        """Optional (deprecated please use execution-mode).
           |Whether to prepare training data or test data.""".stripMargin
+      )
+
+    // Parse the execution mode, which decides whether to prepare training, validation, or test data
+    opt[String]("execution-mode")
+      .action(
+        (executionMode, tensorizeInParams) => {
+          if (Array(TRAINING_EXECUTION_MODE, VALIDATION_EXECUTION_MODE, TEST_EXECUTION_MODE).contains(executionMode.toLowerCase)) {
+            tensorizeInParams.copy(executionMode = executionMode.toLowerCase)
+          } else {
+            throw new IllegalArgumentException("Execution mode must be one of 'train', 'validate', or 'test'.")
+          }
+        }
+      )
+      .optional()
+      .text(
+        """Optional.
+          |Whether to prepare training, validation, or test data.""".stripMargin
       )
 
     // Parse whether to cache the intermediate Spark DataFrame result with default set to false
@@ -207,6 +228,14 @@ object TensorizeInJobParamsParser {
         """Optional.
           |The output format of tensorized data, e.g. Avro or TFRecord.""".stripMargin
       )
+
+    opt[Seq[String]]("extra-columns-to-keep")
+      .action((extraColumns, tensorizeInParams) => tensorizeInParams.copy(extraColumnsToKeep = extraColumns))
+      .optional()
+      .text(
+        """Optional.
+          |A list of comma separated column names to specify extra columns to keep.""".stripMargin
+      )
   }
 
   /**
@@ -217,7 +246,7 @@ object TensorizeInJobParamsParser {
    */
   def parse(args: Seq[String]): TensorizeInParams = {
 
-    val parsedParams = parser.parse(
+    parser.parse(
       args,
       TensorizeInParams(
         inputPaths = Seq.empty,
@@ -230,21 +259,25 @@ object TensorizeInJobParamsParser {
         externalFeaturesListPath = "",
         tensorizeInConfig = null,
         isTrainMode = true,
+        executionMode = TRAINING_EXECUTION_MODE,
         enableCache = false,
         skipConversion = false,
-        outputFormat = AVRO_RECORD
+        outputFormat = AVRO_RECORD,
+        extraColumnsToKeep = Seq.empty
       )
     ) match {
-      case Some(params) => params
+      case Some(params) =>
+        // Check if users only specify either date range or days range
+        if (params.inputDateRange.nonEmpty && params.inputDaysRange.nonEmpty) {
+          throw new IllegalArgumentException("Please only specify either date range or days range.")
+        }
+        if(!params.isTrainMode && params.executionMode == TRAINING_EXECUTION_MODE){
+          params.copy(executionMode = TEST_EXECUTION_MODE)
+        } else {
+          params
+        }
       case None => throw new IllegalArgumentException(
         s"Parsing the TensorizeIn command line arguments failed.\n" + s"(${args.mkString(", ")}),\n ${parser.usage}")
     }
-
-    // Check if users only specify either date range or days range
-    if (parsedParams.inputDateRange.nonEmpty && parsedParams.inputDaysRange.nonEmpty) {
-      throw new IllegalArgumentException("Please only specify either date range or days range.")
-    }
-
-    parsedParams
   }
 }

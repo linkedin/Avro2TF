@@ -20,7 +20,14 @@ object TestUtil {
   def checkOutputColumns(dataFrame: DataFrame, tensorizeInParams: TensorizeInParams): Unit = {
 
     val actualColumns = dataFrame.columns
-    val expectedColumns = TensorizeInConfigHelper.getOutputTensorNames(tensorizeInParams)
+    val expectedColumns = TensorizeInConfigHelper.getOutputTensorNames(tensorizeInParams) ++
+      tensorizeInParams.extraColumnsToKeep.map {
+        columnName => if(columnName.contains(Constants.COLUMN_NAME_ALIAS_DELIMITER)) {
+          columnName.trim.split(Constants.COLUMN_NAME_ALIAS_DELIMITER).last
+        } else {
+          columnName
+        }
+      }
 
     assertEqualsNoOrder(actualColumns.toList.toArray, expectedColumns.toArray)
   }

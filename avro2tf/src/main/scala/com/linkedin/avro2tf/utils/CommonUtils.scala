@@ -1,5 +1,6 @@
 package com.linkedin.avro2tf.utils
 
+import com.linkedin.avro2tf.configs.DataType
 import com.linkedin.avro2tf.utils.Constants._
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.types._
@@ -139,5 +140,15 @@ object CommonUtils {
         }
       case _ => false
     }
+  }
+
+  /**
+   * Check if a tensor is integer tensor
+   *
+   * @param tensorType The data type of a tensor
+   * @return If the tensor is integer tensor
+   */
+  def isIntegerTensor(tensorType: DataType.Value): Boolean = {
+    tensorType == DataType.int || tensorType == DataType.long
   }
 }

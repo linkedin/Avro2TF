@@ -2,6 +2,16 @@
   "features": [
     {
       "inputFeatureInfo": {
+        "columnExpr": "words.term[0]"
+      },
+      "outputTensorInfo": {
+        "name": "firstWord",
+        "dtype": "long",
+        "shape": []
+      }
+    },
+    {
+      "inputFeatureInfo": {
         "columnExpr": "review",
         "transformConfig": {
           "tokenization": {

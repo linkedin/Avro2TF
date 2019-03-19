@@ -3,7 +3,7 @@ package com.linkedin.avro2tf.jobs
 import com.linkedin.avro2tf.configs.Feature
 import com.linkedin.avro2tf.helpers.TensorizeInConfigHelper
 import com.linkedin.avro2tf.parsers.TensorizeInParams
-import com.linkedin.avro2tf.utils.CommonUtils
+import com.linkedin.avro2tf.utils.{CommonUtils, Constants}
 import com.linkedin.avro2tf.utils.Constants._
 import org.apache.spark.sql.expressions.UserDefinedFunction
 import org.apache.spark.sql.functions.{col, expr, struct, udf}
@@ -27,20 +27,40 @@ class FeatureExtraction {
     // Concatenate features and labels of TensorizeIn configuration
     val featuresAndLabels = TensorizeInConfigHelper.concatFeaturesAndLabels(params)
 
-    // Get a sequence of columns based on column expressions and column configurations from input feature information
-    val columns = getColumns(dataFrame, featuresAndLabels)
+    // Get a sequence of tensor columns based on column expressions and column configurations from input feature information
+    val tensorColumns = getTensorColumns(dataFrame, featuresAndLabels)
 
-    dataFrame.select(columns: _*)
+    // Get the extra columns to keep specified by user
+    val extraColumns = getExtraColumns(params)
+
+    dataFrame.select(tensorColumns ++ extraColumns: _*)
   }
 
   /**
-   * Get a sequence of columns based on column expressions and column configurations from input feature information
+   * Get the extra columns that users want to keep besides the tensor columns
+   *
+   * @param params TensorizeIn parameters specified by user
+   * @return A Spark DataFrame
+   */
+  private def getExtraColumns(params: TensorizeInParams): Seq[Column] = {
+    params.extraColumnsToKeep.map {
+      exprString => if(exprString.contains(Constants.COLUMN_NAME_ALIAS_DELIMITER)){
+        val exprAndName = exprString.trim.split(Constants.COLUMN_NAME_ALIAS_DELIMITER)
+        expr(exprAndName.head).alias(exprAndName.last)
+      } else {
+        expr(exprString)
+      }
+    }
+  }
+
+  /**
+   * Get a sequence of tensor columns based on column expressions and column configurations from input feature information
    *
    * @param dataFrame Input data Spark DataFrame
    * @param featuresAndLabels A sequence of features and labels from TensorizeIn configuration
    * @return A sequence of Spark columns
    */
-  private def getColumns(dataFrame: DataFrame, featuresAndLabels: Seq[Feature]): Seq[Column] = {
+  private def getTensorColumns(dataFrame: DataFrame, featuresAndLabels: Seq[Feature]): Seq[Column] = {
 
     // Get all existing columns from the input Spark DataFrame
     val existingColumns = dataFrame.columns.map(col)

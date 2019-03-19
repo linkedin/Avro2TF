@@ -71,6 +71,7 @@ class FeatureListGenerationTest extends WithLocalSparkSession {
           case arrayType: ArrayType if arrayType.elementType.isInstanceOf[StructType] =>
             val ntvType = arrayType.elementType.asInstanceOf[StructType]
             ntvType.fieldNames.contains(NTV_NAME) && ntvType.fieldNames.contains(NTV_TERM) && ntvType.fieldNames.contains(NTV_VALUE)
+          case _: StringType => true
           case _ => false
         }
       })
