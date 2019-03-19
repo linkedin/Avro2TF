@@ -2,3 +2,7 @@
 .idea/
 Avro2TF-OSS.iml
 build/
+*.iml
+*.ipr
+*.iws
+out
