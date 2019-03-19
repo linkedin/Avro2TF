@@ -4,6 +4,8 @@
  */
 
 /* The name of the modules to use */
-def modules = ['avro2tf']
+//def modules = ['avro2tf']
 
-include(*modules)
+//include(*modules)
+
+include 'avro2tf'
