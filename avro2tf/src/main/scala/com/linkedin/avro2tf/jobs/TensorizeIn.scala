@@ -2,7 +2,7 @@ package com.linkedin.avro2tf.jobs
 
 import com.linkedin.avro2tf.helpers.TensorizeInJobHelper
 import com.linkedin.avro2tf.parsers._
-import com.linkedin.avro2tf.utils.Constants
+import com.linkedin.avro2tf.utils.{Constants, TrainingMode}
 import org.apache.spark.sql._
 import org.apache.spark.storage.StorageLevel
 import org.slf4j.{Logger, LoggerFactory}
@@ -35,7 +35,7 @@ object TensorizeIn {
     dataFrame = (new FeatureTransformation).run(dataFrame, params)
 
     // Generate tensor metadata only in train mode; otherwise, directly load existing ones from working directory
-    if (params.executionMode == Constants.TRAINING_EXECUTION_MODE) {
+    if (params.executionMode == TrainingMode.training) {
       if (params.enableCache) dataFrame.persist(StorageLevel.MEMORY_AND_DISK_SER)
 
       // Generate tensor metadata
@@ -103,3 +103,4 @@ object TensorizeIn {
    */
   case class FeatureListEntry(columnName: String, featureEntry: String)
 }
+

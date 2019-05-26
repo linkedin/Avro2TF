@@ -21,6 +21,8 @@ class FeatureTransformation {
 
     // Text feature tokenization
     val tokenizedDataFrame = TextTokenizationTransformer.tokenizeTextFeature(dataFrame, params)
-    HashingTransformer.hashFeatures(tokenizedDataFrame, params)
+
+    // Hashing Transformation
+    HashingTransformer.hashTransform(tokenizedDataFrame, params)
   }
 }

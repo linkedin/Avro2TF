@@ -48,6 +48,26 @@ object CommonUtils {
   }
 
   /**
+   * Check if the type of a column is an (nested) array of sparse vector
+   *
+   * @param dataType The schema type of a column
+   * @return is array of [[com.linkedin.avro2tf.jobs.TensorizeIn.SparseVector]]
+   */
+  def isArrayOfSparseTensor(dataType: DataType): Boolean = {
+
+    dataType match {
+      case arrayType: ArrayType =>
+        arrayType.elementType match {
+          case ntvType: StructType => ntvType.fieldNames.length == 2 && ntvType.fieldNames.contains(INDICES) &&
+            ntvType.fieldNames.contains(VALUES)
+          case arrayType: ArrayType => isArrayOfNTV(arrayType)
+          case _ => false
+        }
+      case _ => false
+    }
+  }
+
+  /**
    * Check if the type of a column is an (nested) array of String
    *
    * @param dataType The schema type of a column
@@ -117,6 +137,25 @@ object CommonUtils {
         arrayType.elementType match {
           case _: FloatType => true
           case arrayType: ArrayType => isArrayOfFloat(arrayType)
+          case _ => false
+        }
+      case _ => false
+    }
+  }
+
+  /**
+   * Check if the type of a column is an (nested) array of Float
+   *
+   * @param dataType The schema type of a column
+   * @return is array of Float or not
+   */
+  def isArrayOfDouble(dataType: DataType): Boolean = {
+
+    dataType match {
+      case arrayType: ArrayType =>
+        arrayType.elementType match {
+          case _: DoubleType => true
+          case arrayType: ArrayType => isArrayOfDouble(arrayType)
           case _ => false
         }
       case _ => false

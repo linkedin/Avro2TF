@@ -10,6 +10,11 @@
     "shape" : [ 4 ],
     "cardinality" : 1000
   }, {
+    "name" : "genreFeatures",
+    "dtype" : "sparseVector",
+    "shape" : [ ],
+    "cardinality" : 21
+  }, {
     "name" : "genreFeatures_term",
     "dtype" : "long",
     "shape" : [ -1 ],
@@ -25,5 +30,15 @@
     "dtype" : "double",
     "shape" : [ ],
     "cardinality" : null
+  }, {
+    "name" : "movieId_hashed_response",
+    "dtype" : "long",
+    "shape" : [ 4 ],
+    "cardinality" : 1000
+  }, {
+    "name" : "genreFeatures_movieLatentFactorFeatures_response",
+    "dtype" : "sparseVector",
+    "shape" : [ ],
+    "cardinality" : 100
   } ]
 }

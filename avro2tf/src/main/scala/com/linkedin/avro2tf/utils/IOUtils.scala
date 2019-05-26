@@ -272,4 +272,21 @@ object IOUtils {
       writer.close()
     }
   }
+
+  /**
+   * Reading a file from HDFS
+   *
+   * @param fs Hadoop file system
+   * @param path The input path for the file
+   * @return Content string
+   */
+  def readContentFromHDFS(fs: FileSystem, path: Path): String = {
+    require(fs.exists(path), s"Path ${path.toString} does not exist!")
+    val inputStream = fs.open(path)
+    try {
+      scala.io.Source.fromInputStream(inputStream).mkString
+    } finally {
+      inputStream.close()
+    }
+  }
 }

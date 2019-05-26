@@ -4,6 +4,7 @@ import scala.io.Source
 
 import com.linkedin.avro2tf.configs.TensorizeInConfiguration
 import com.linkedin.avro2tf.utils.Constants._
+import com.linkedin.avro2tf.utils.TrainingMode
 
 /**
  * TensorizeIn parsed parameters will be put into this case class for ease of access
@@ -34,7 +35,7 @@ case class TensorizeInParams(
   externalFeaturesListPath: String,
   tensorizeInConfig: TensorizeInConfiguration,
   isTrainMode: Boolean,
-  executionMode: String,
+  executionMode: TrainingMode.TrainingMode,
   enableCache: Boolean,
   skipConversion: Boolean,
   outputFormat: String,
@@ -54,6 +55,13 @@ case class WorkingDirectory(rootPath: String) {
   val featureListPath = s"$rootPath/$FEATURE_LIST_DIR_NAME"
   val schemaFilePath = s"$rootPath/$SCHEMA_FILE_NAME"
   val tensorMetadataPath = s"$rootPath/$METADATA_DIR_NAME/$TENSOR_METADATA_FILE_NAME"
+
+  val rankingDataRoot = s"$rootPath/$RANK_DATA"
+  val rankingTrainingPath = s"$rankingDataRoot/$TRAINING_DATA_DIR_NAME"
+  val rankingValidationPath = s"$rankingDataRoot/$VALIDATION_DATA_DIR_NAME"
+  val rankingTestPath = s"$rankingDataRoot/$TEST_DATA_DIR_NAME"
+  val rankingTensorMetadataPath = s"$rankingDataRoot/$METADATA_DIR_NAME/$TENSOR_METADATA_FILE_NAME"
+  val rankingContentFeatureList = s"$rankingDataRoot/$CONTENT_FEATURE_LIST"
 }
 
 /**
@@ -188,13 +196,8 @@ object TensorizeInJobParamsParser {
     // Parse the execution mode, which decides whether to prepare training, validation, or test data
     opt[String]("execution-mode")
       .action(
-        (executionMode, tensorizeInParams) => {
-          if (Array(TRAINING_EXECUTION_MODE, VALIDATION_EXECUTION_MODE, TEST_EXECUTION_MODE).contains(executionMode.toLowerCase)) {
-            tensorizeInParams.copy(executionMode = executionMode.toLowerCase)
-          } else {
-            throw new IllegalArgumentException("Execution mode must be one of 'train', 'validate', or 'test'.")
-          }
-        }
+        (executionMode, tensorizeInParams) =>
+          tensorizeInParams.copy(executionMode = TrainingMode.withName(executionMode.toLowerCase))
       )
       .optional()
       .text(
@@ -259,7 +262,7 @@ object TensorizeInJobParamsParser {
         externalFeaturesListPath = "",
         tensorizeInConfig = null,
         isTrainMode = true,
-        executionMode = TRAINING_EXECUTION_MODE,
+        executionMode = TrainingMode.training,
         enableCache = false,
         skipConversion = false,
         outputFormat = AVRO_RECORD,
@@ -271,8 +274,8 @@ object TensorizeInJobParamsParser {
         if (params.inputDateRange.nonEmpty && params.inputDaysRange.nonEmpty) {
           throw new IllegalArgumentException("Please only specify either date range or days range.")
         }
-        if(!params.isTrainMode && params.executionMode == TRAINING_EXECUTION_MODE){
-          params.copy(executionMode = TEST_EXECUTION_MODE)
+        if(!params.isTrainMode && params.executionMode == TrainingMode.training){
+          params.copy(executionMode = TrainingMode.test)
         } else {
           params
         }

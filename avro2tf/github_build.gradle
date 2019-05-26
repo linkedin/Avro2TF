@@ -1,0 +1,52 @@
+apply plugin: 'scala'
+apply plugin: "eclipse"
+apply plugin: "idea"
+
+buildscript {
+  repositories {
+    jcenter()
+    maven {
+      url "https://plugins.gradle.org/m2/"
+    }
+  }
+  dependencies {
+    classpath 'com.commercehub.gradle.plugin:gradle-avro-plugin:0.7.0'
+    classpath 'org.github.ngbinh.scalastyle:gradle-scalastyle-plugin_2.10:0.8.2'
+    // shadow allows us to build fat/shadow jars. See doc at: http://imperceptiblethoughts.com/shadow/.
+    classpath 'com.github.jengelman.gradle.plugins:shadow:2.0.1'
+  }
+}
+
+repositories {
+  mavenCentral()
+}
+
+ext.deps = [
+    external: [
+        "avroMapred": "org.apache.avro:avro-mapred:1.7.7:hadoop2",
+        "jacksonDataBindFasterXML": "com.fasterxml.jackson.core:jackson-databind:2.6.7.1",
+        "scopt": "com.github.scopt:scopt_2.11:3.5.0",
+        "sparkAvro": "com.databricks:spark-avro_2.11:4.0.0",
+        "sparkCore": "org.apache.spark:spark-core_2.11:2.3.0",
+        "sparkMllib": "org.apache.spark:spark-mllib_2.11:2.3.0",
+        "sparkSql": "org.apache.spark:spark-sql_2.11:2.3.0",
+        "testng": "org.testng:testng:6.4"
+    ]
+]
+
+dependencies {
+  compile(deps.external.avroMapred)
+  compile(deps.external.jacksonDataBindFasterXML)
+  compile(deps.external.scopt)
+  compile(deps.external.sparkAvro)
+  compile(deps.external.sparkCore) {
+    // The avro-mapred in sparkCore defaults to hadoop1 jar so it will cause issues in unit test
+    exclude module: 'avro-mapred'
+  }
+  compile(deps.external.sparkMllib)
+  compile(deps.external.sparkSql) {
+    // The avro-mapred in sparkSql defaults to hadoop1 jar so it will cause issues in unit test
+    exclude module: 'avro-mapred'
+  }
+  testCompile(deps.external.testng)
+}

@@ -10,6 +10,7 @@ import com.linkedin.avro2tf.helpers.TensorizeInConfigHelper
 import com.linkedin.avro2tf.parsers.TensorizeInParams
 import com.linkedin.avro2tf.utils.CommonUtils
 import com.linkedin.avro2tf.utils.Constants._
+
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.sql.expressions.UserDefinedFunction
@@ -122,8 +123,9 @@ class FeatureIndicesConversion {
             ntv => {
               val name = ntv.getAs[String](NTV_NAME)
               val term = ntv.getAs[String](NTV_TERM)
-              val value = ntv.getAs[Float](NTV_VALUE)
+              val value = CommonUtils.convertValueOfNTVToFloat(ntv)
               val id = featureMapping.getOrElse(s"$name,$term", cardinality)
+
               if (id == cardinality) {
                 hasUnknownId = true
               } else {

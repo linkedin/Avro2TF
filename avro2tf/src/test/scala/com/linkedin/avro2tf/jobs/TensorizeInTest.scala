@@ -4,7 +4,7 @@ import java.io.{File, FileOutputStream, PrintWriter}
 
 import com.linkedin.avro2tf.parsers.TensorizeInJobParamsParser
 import com.linkedin.avro2tf.utils.ConstantsForTest._
-import com.linkedin.avro2tf.utils.{Constants, WithLocalSparkSession}
+import com.linkedin.avro2tf.utils.{TrainingMode, WithLocalSparkSession}
 import org.apache.commons.io.FileUtils
 import org.testng.Assert._
 import org.testng.annotations.{DataProvider, Test}
@@ -67,7 +67,7 @@ class TensorizeInTest extends WithLocalSparkSession {
       INPUT_PATHS_NAME, inputPath,
       WORKING_DIRECTORY_NAME, workingDirectory,
       TENSORIZEIN_CONFIG_PATH_NAME, tensorizeInConfig,
-      EXECUTION_MODE, Constants.VALIDATION_EXECUTION_MODE
+      EXECUTION_MODE, TrainingMode.validation.toString
     )
     val tensorizeInValidationParams = TensorizeInJobParamsParser.parse(validationParams)
 
@@ -78,7 +78,7 @@ class TensorizeInTest extends WithLocalSparkSession {
       INPUT_PATHS_NAME, inputPath,
       WORKING_DIRECTORY_NAME, workingDirectory,
       TENSORIZEIN_CONFIG_PATH_NAME, tensorizeInConfig,
-      EXECUTION_MODE, Constants.TEST_EXECUTION_MODE
+      EXECUTION_MODE, TrainingMode.test.toString
     )
     val tensorizeInTestParams = TensorizeInJobParamsParser.parse(testParams)
 

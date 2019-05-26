@@ -22,7 +22,8 @@ class FeatureIndicesConversionTest extends WithLocalSparkSession {
   @DataProvider
   def testData():Array[Array[Any]] = {
     Array(
-      Array(AVRO_RECORD)
+      Array(AVRO_RECORD),
+      Array(TF_RECORD)
     )
   }
 

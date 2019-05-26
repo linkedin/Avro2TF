@@ -95,6 +95,50 @@
         "dtype": "int",
         "shape": []
       }
+    },
+    {
+      "inputFeatureInfo": {
+        "columnExpr": "review",
+        "transformConfig": {
+          "tokenization": {
+            "removeStopWords": true
+          }
+        }
+      },
+      "outputTensorInfo": {
+        "name": "wordSeq_response",
+        "dtype": "long",
+        "shape": [
+          -1
+        ]
+      }
+    },
+    {
+      "inputFeatureInfo": {
+        "columnConfig": {
+          "words": {
+            "whitelist": [
+              "*"
+            ]
+          },
+          "wideFeatures": {
+            "blacklist": [
+              "wideFeatures"
+            ]
+          }
+        },
+        "transformConfig": {
+          "hashInfo": {
+            "hashBucketSize": 100,
+            "combiner": "AVG"
+          }
+        }
+      },
+      "outputTensorInfo": {
+        "name": "words_wideFeatures_response",
+        "dtype": "sparseVector",
+        "shape": []
+      }
     }
   ]
 }

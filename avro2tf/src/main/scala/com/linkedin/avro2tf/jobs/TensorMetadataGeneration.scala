@@ -5,10 +5,12 @@ import java.nio.charset.StandardCharsets.UTF_8
 import scala.collection.mutable
 import scala.io.Source
 
-import com.linkedin.avro2tf.configs.{TensorMetadata, TensorizeInTensorMetadata}
+import com.linkedin.avro2tf.configs.{Feature, TensorMetadata, TensorizeInTensorMetadata}
+import com.linkedin.avro2tf.helpers.TensorizeInConfigHelper
 import com.linkedin.avro2tf.parsers.TensorizeInParams
 import com.linkedin.avro2tf.utils.Constants._
 import com.linkedin.avro2tf.utils.{IOUtils, JsonUtil}
+
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.functions.col
@@ -33,11 +35,8 @@ class TensorMetadataGeneration {
       getColsOfIntOrLongCardinalityMapping(dataFrame, params) ++
       getColsWithHashInfoCardinalityMapping(params)
 
-    val featuresTensorMetadata = params.tensorizeInConfig.features
-      .map(feature => TensorMetadata(feature.outputTensorInfo.name, feature.outputTensorInfo.dtype, feature.outputTensorInfo.shape.get,
-        Some(colsToFeatureCardinalityMapping.get(feature.outputTensorInfo.name))))
-    val labelsTensorMetadata = params.tensorizeInConfig.labels.getOrElse(Seq.empty)
-      .map(label => TensorMetadata(label.outputTensorInfo.name, label.outputTensorInfo.dtype, label.outputTensorInfo.shape.get, None))
+    val featuresTensorMetadata = generateTensorMetadata(params.tensorizeInConfig.features, colsToFeatureCardinalityMapping)
+    val labelsTensorMetadata = generateTensorMetadata(params.tensorizeInConfig.labels.getOrElse(Seq.empty), colsToFeatureCardinalityMapping)
 
     // Serialize TensorizeIn Tensor Metadata to JSON String
     val serializedTensorMetadata = JsonUtil.toJsonString(TensorizeInTensorMetadata(featuresTensorMetadata, labelsTensorMetadata))
@@ -69,6 +68,7 @@ class TensorMetadataGeneration {
         colsWithFeatureListCardinalityMapping
           .put(columnName, Source.fromInputStream(fileSystem.open(sourcePath), UTF_8.name()).getLines().size + 1)
       }
+
       colsWithFeatureListCardinalityMapping.toMap
     } else Map.empty
   }
@@ -77,30 +77,33 @@ class TensorMetadataGeneration {
    * Get the cardinality mapping of columns with hash information
    *
    * @param params TensorizeIn parameters specified by user
-   * @return A mapping of column name to its feature cardinality mapping
+   * @return A mapping of column name to its cardinality
    */
   private def getColsWithHashInfoCardinalityMapping(params: TensorizeInParams): Map[String, Any] = {
 
-    params.tensorizeInConfig.features
-      .filter(feature => feature.inputFeatureInfo.get.transformConfig match {
-        case Some(transformConfig) if transformConfig.get(HASH_INFO).isDefined => transformConfig(HASH_INFO).contains(HASH_INFO_HASH_BUCKET_SIZE)
+    TensorizeInConfigHelper.concatFeaturesAndLabels(params)
+      .filter(featureOrLabel => featureOrLabel.inputFeatureInfo.get.transformConfig match {
+        case Some(transformConfig) if transformConfig.get(HASH_INFO).isDefined =>
+          transformConfig(HASH_INFO).contains(HASH_INFO_HASH_BUCKET_SIZE)
         case _ => false
       })
-      .map(feature => feature.outputTensorInfo.name -> feature.inputFeatureInfo.get.transformConfig.get(HASH_INFO)(HASH_INFO_HASH_BUCKET_SIZE))
+      .map(feature => feature.outputTensorInfo.name -> feature.inputFeatureInfo.get
+        .transformConfig
+        .get(HASH_INFO)(HASH_INFO_HASH_BUCKET_SIZE))
       .toMap
   }
 
   /**
-   * Get a mapping of column name of Integer or Long type to its feature cardinality
+   * Get a mapping of column name of Integer or Long type to its cardinality
    *
    * @param dataFrame Input data Spark DataFrame
    * @param params TensorizeIn parameters specified by user
-   * @return A mapping of column name to its feature cardinality mapping
+   * @return A mapping of column name to its cardinality
    */
   private def getColsOfIntOrLongCardinalityMapping(dataFrame: DataFrame, params: TensorizeInParams): Map[String, Long] = {
 
-    val colsContainIntOrLongType = params.tensorizeInConfig.features
-      .map(feature => feature.outputTensorInfo.name)
+    val colsContainIntOrLongType = TensorizeInConfigHelper.concatFeaturesAndLabels(params)
+      .map(featureOrLabel => featureOrLabel.outputTensorInfo.name)
       .filter(columnName => dataFrame.schema(columnName).dataType.isInstanceOf[IntegerType] ||
         dataFrame.schema(columnName).dataType.isInstanceOf[LongType])
 
@@ -112,5 +115,21 @@ class TensorMetadataGeneration {
     colsContainIntOrLongType
       .map(colName => colName -> maxRow.getAs[Long](s"$MAX($colName)"))
       .toMap
+  }
+
+  /**
+   * The main function to generate Tensor Metadata
+   *
+   * @param featuresOrLabels A sequence of features or labels
+   * @param colsToFeatureCardinalityMapping A mapping of column name to its cardinality
+   * @return A sequence of Tensor metadata
+   */
+  private def generateTensorMetadata(
+    featuresOrLabels: Seq[Feature],
+    colsToFeatureCardinalityMapping: Map[String, Any]): Seq[TensorMetadata] = {
+
+    featuresOrLabels
+      .map(featureOrLabel => TensorMetadata(featureOrLabel.outputTensorInfo.name, featureOrLabel.outputTensorInfo.dtype,
+        featureOrLabel.outputTensorInfo.shape.get, Some(colsToFeatureCardinalityMapping.get(featureOrLabel.outputTensorInfo.name))))
   }
 }

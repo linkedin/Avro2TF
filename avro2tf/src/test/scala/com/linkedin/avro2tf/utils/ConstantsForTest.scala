@@ -26,7 +26,7 @@ object ConstantsForTest {
   final val INPUT_DATE_RANGE_VALUE_END = "20190117"
   final val INPUT_DAYS_RANGE_NAME = "--input-days-range"
   final val INPUT_DAYS_RANGE_VALUE = "6-3"
-  final val INPUT_MOVIELENS_FILE_PATHS = "src/test/resources/data/trainData.avro"
+  final val INPUT_MOVIELENS_FILE_PATHS = "src/test/resources/data/trainSmall.avro"
   final val INPUT_PATHS_NAME = "--input-paths"
   final val INPUT_PATHS_VALUE = "/input/123"
   final val INPUT_TEXT_FILE_PATHS = "src/test/resources/data/text.avro"
@@ -46,6 +46,7 @@ object ConstantsForTest {
   final val TENSORIZEIN_CONFIG_PATH_VALUE_4 = "configs/tensorizeIn_config_4.json"
   final val TENSORIZEIN_CONFIG_PATH_VALUE_5 = "configs/tensorizeIn_config_5.json"
   final val TENSORIZEIN_CONFIG_PATH_VALUE_MOVIELENS= "configs/tensorizeIn_config_movielens.json"
+  final val TENSORIZEIN_CONFIG_PATH_VALUE_MOVIELENS_RANK = "configs/tensorizeIn_config_movielens_rank.json"
   final val TENSORIZEIN_CONFIG_PATH_VALUE_SAMPLE = "configs/tensorizeIn_config_sample.json"
   final val TENSORIZEIN_CONFIG_TEST_ARRAY = Array.empty[Int]
   final val TENSORIZEIN_CONFIG_TEST_INFO = "testInfo"

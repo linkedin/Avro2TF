@@ -6,7 +6,7 @@ import com.databricks.spark.avro._
 import com.linkedin.avro2tf.configs.{DataType, Feature}
 import com.linkedin.avro2tf.parsers.TensorizeInParams
 import com.linkedin.avro2tf.utils.Constants._
-import com.linkedin.avro2tf.utils.{CommonUtils, Constants, IOUtils}
+import com.linkedin.avro2tf.utils.{CommonUtils, Constants, IOUtils, TrainingMode}
 import org.apache.spark.sql.expressions.UserDefinedFunction
 import org.apache.spark.sql.functions.{expr, udf}
 import org.apache.spark.sql._
@@ -49,22 +49,14 @@ object TensorizeInJobHelper {
   def saveDataToHDFS(dataFrame: DataFrame, params: TensorizeInParams): Unit = {
 
     val outputPath = params.executionMode match {
-      case TRAINING_EXECUTION_MODE => params.workingDir.trainingDataPath
-      case VALIDATION_EXECUTION_MODE => params.workingDir.validationDataPath
-      case TEST_EXECUTION_MODE => params.workingDir.testDataPath
+      case TrainingMode.training => params.workingDir.trainingDataPath
+      case TrainingMode.validation => params.workingDir.validationDataPath
+      case TrainingMode.test => params.workingDir.testDataPath
     }
 
     // Get a Spark DataFrame based on whether user specifies the number of output files; if not specify, the number is set to negative
     val dataFrameRepartitioned =
-      if (params.numOfOutputFiles < 0) {
-        if (params.enableShuffle) dataFrame.repartition() else dataFrame
-      } else {
-        if (params.enableShuffle || dataFrame.rdd.getNumPartitions < params.numOfOutputFiles) {
-          dataFrame.repartition(params.numOfOutputFiles)
-        } else {
-          dataFrame.coalesce(params.numOfOutputFiles)
-        }
-      }
+      repartitionData(dataFrame, params.numOfOutputFiles, params.enableShuffle)
 
     // Write data to HDFS
     if (params.outputFormat.equals(TF_RECORD)) {
@@ -74,6 +66,29 @@ object TensorizeInJobHelper {
         .save(outputPath)
     } else {
       dataFrameRepartitioned.write.mode(SaveMode.Overwrite).avro(outputPath)
+    }
+  }
+
+  /**
+   * Repartition the data according to num of output files and shuffle option
+   *
+   * @param dataFrame The data frame
+   * @param numOfOutputFiles The number of output files
+   * @param enableShuffle The shuffle option
+   * @return The repartitioned data frame
+   */
+  def repartitionData(dataFrame: DataFrame, numOfOutputFiles: Int, enableShuffle: Boolean): DataFrame = {
+    if (numOfOutputFiles < 0) {
+      if (enableShuffle) {
+        dataFrame.repartition()
+      } else {}
+      dataFrame
+    } else {
+      if (enableShuffle || dataFrame.rdd.getNumPartitions < numOfOutputFiles) {
+        dataFrame.repartition(numOfOutputFiles)
+      } else {
+        dataFrame.coalesce(numOfOutputFiles)
+      }
     }
   }
 

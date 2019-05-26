@@ -24,7 +24,7 @@
       },
       "outputTensorInfo": {
         "name": "movieId_hashed",
-        "dtype": "long",
+        "dtype": "int",
         "shape": [
           4
         ]
@@ -38,18 +38,6 @@
         "name": "genreFeatures",
         "dtype": "sparseVector",
         "shape": []
-      }
-    },
-    {
-      "inputFeatureInfo": {
-        "columnExpr": "genreFeatures.term"
-      },
-      "outputTensorInfo": {
-        "name": "genreFeatures_term",
-        "dtype": "long",
-        "shape": [
-          -1
-        ]
       }
     },
     {
@@ -88,51 +76,6 @@
       "outputTensorInfo": {
         "name": "response",
         "dtype": "double",
-        "shape": []
-      }
-    },
-    {
-      "inputFeatureInfo": {
-        "columnExpr": "movieId",
-        "transformConfig": {
-          "hashInfo": {
-            "hashBucketSize": 1000,
-            "numHashFunctions": 4
-          }
-        }
-      },
-      "outputTensorInfo": {
-        "name": "movieId_hashed_response",
-        "dtype": "long",
-        "shape": [
-          4
-        ]
-      }
-    },
-    {
-      "inputFeatureInfo": {
-        "columnConfig": {
-          "genreFeatures": {
-            "whitelist": [
-              "Genre"
-            ]
-          },
-          "movieLatentFactorFeatures": {
-            "blacklist": [
-              "*"
-            ]
-          }
-        },
-        "transformConfig": {
-          "hashInfo": {
-            "hashBucketSize": 100,
-            "combiner": "AVG"
-          }
-        }
-      },
-      "outputTensorInfo": {
-        "name": "genreFeatures_movieLatentFactorFeatures_response",
-        "dtype": "sparseVector",
         "shape": []
       }
     }

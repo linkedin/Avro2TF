@@ -1,24 +1,36 @@
-apply plugin: 'scala'
-apply plugin: "eclipse"
-apply plugin: "idea"
+apply plugin: 'li-scala'
+apply plugin: 'li-hadoop'
 
 dependencies {
-  compile(deps.external.avroMapred)
-  compile(deps.external.jacksonDataBindFasterXML)
-  compile(deps.external.scopt)
-  compile(deps.external.sparkAvro)
-  compile(deps.external.sparkCore) {
-    // The avro-mapred in sparkCore defaults to hadoop1 jar so it will cause issues in unit test
-    exclude module: 'avro-mapred'
-  }
-  compile(deps.external.sparkMllib)
-  compile(deps.external.sparkSql) {
-    // The avro-mapred in sparkSql defaults to hadoop1 jar so it will cause issues in unit test
-    exclude module: 'avro-mapred'
-  }
-  testCompile(deps.external.testng)
+  compile(spec.external.scopt)
+  compile(spec.external.tensorflowConnector)
+  compile(spec.product.'spark-mp'."spark-core$scalaSuffix")
+  compile(spec.product.'spark-mp'."spark-sql$scalaSuffix")
+  compile(spec.product.'spark-mp'."spark-mllib$scalaSuffix")
+  compile(spec.product.'spark-common'."spark-common$scalaSuffix")
+  compile(spec.product.hadoop.'hadoop-common') { transitive = false }
+
+  testCompile(spec.product.hadoop.'hadoop-common-tests')
+  testCompile(spec.product.hadoop.'hadoop-hdfs-tests')
+  testCompile(spec.product.'dali-mp'.'dali-data-test')
+  testCompile(group: 'org.apache.avro', name: 'avro-mapred', version: '1.7.7', classifier: 'hadoop2')
 }
 
-test {
-  useTestNG()
+configurations {
+  // Exclude problematic dependency brought in by spark-mp
+  all*.exclude group: 'org.eclipse.jetty'
+  all*.exclude group: 'com.chuusai'
+}
+
+// Exclude dependencies that are already on the grid from the Hadoop zip
+configurations.hadoopRuntime {
+  exclude group: 'com.linkedin.hadoop'
+  exclude group: 'com.linkedin.hive'
+  exclude group: 'com.linkedin.pig'
+  exclude group: 'com.linkedin.spark'
+  exclude group: 'org.apache.hadoop'
+  exclude group: 'org.apache.hive'
+  exclude group: 'org.apache.pig'
+  exclude group: 'org.apache.spark'
+  exclude group: 'org.slf4j'
 }

@@ -5,30 +5,33 @@ import com.linkedin.avro2tf.jobs.TensorizeIn
 import com.linkedin.avro2tf.parsers.TensorizeInParams
 import com.linkedin.avro2tf.utils.Constants._
 import com.linkedin.avro2tf.utils.{CommonUtils, HashingUtils}
+
 import org.apache.spark.sql.expressions.UserDefinedFunction
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{DataFrame, Row}
 
 /**
- * A hash transformer for the the transformation job
+ * A Hashing Transformer for the Feature Transformation job
+ *
  */
 object HashingTransformer {
 
   /**
-   * Apply hashing on features
+   * The main function to perform hashing transformation
    *
    * @param dataFrame Input data Spark DataFrame
    * @param params TensorizeIn parameters specified by user
    * @return A Spark DataFrame
    */
-  def hashFeatures(dataFrame: DataFrame, params: TensorizeInParams): DataFrame = {
+  def hashTransform(dataFrame: DataFrame, params: TensorizeInParams): DataFrame = {
 
     val colsHashInfo = TensorizeInConfigHelper.getColsHashInfo(params)
-    val dataFrameSchema = dataFrame.schema
+
     val hashedColumns = colsHashInfo.map {
       case (columnName, hashInfo) =>
-        val dataType = dataFrameSchema(columnName).dataType
+        val dataType = dataFrame.schema(columnName).dataType
+
         val hashedColumn = if (CommonUtils.isArrayOfNTV(dataType)) {
           hashArrayOfNTVColumn(hashInfo)(dataFrame(columnName))
         } else if (CommonUtils.isArrayOfString(dataType) || CommonUtils.isArrayOfNumericalType(dataType)) {
@@ -38,9 +41,14 @@ object HashingTransformer {
         } else {
           throw new IllegalArgumentException(s"The type of $columnName column: ${dataType.typeName} is not supported")
         }
+
         hashedColumn.name(columnName)
     }
-    val oldColumns = dataFrame.columns.filter(colName => !colsHashInfo.contains(colName)).map(dataFrame(_))
+
+    val oldColumns = dataFrame.columns
+      .filter(colName => !colsHashInfo.contains(colName))
+      .map(dataFrame(_))
+
     dataFrame.select(oldColumns ++ hashedColumns: _*)
   }
 
@@ -65,9 +73,9 @@ object HashingTransformer {
                 val name = ntv.getAs[String](NTV_NAME)
                 val term = ntv.getAs[String](NTV_TERM)
                 val value = ntv.getAs[Float](NTV_VALUE)
-                HashingUtils.multiHash(s"$name,$term", hashInfo.numHashFunctions, hashInfo.hashBucketSize).map(
-                  id => TensorizeIn.IdValue(id, value)
-                )
+
+                HashingUtils.multiHash(s"$name,$term", hashInfo.numHashFunctions, hashInfo.hashBucketSize)
+                  .map(id => TensorizeIn.IdValue(id, value))
               }
             }.groupBy(_.id).map {
               group => {
@@ -79,6 +87,7 @@ object HashingTransformer {
                     }
                   }
                 }
+
                 if (hashInfo.combinerType == CombinerType.AVG) {
                   idValue.copy(value = idValue.value / group._2.size)
                 } else {
@@ -88,6 +97,7 @@ object HashingTransformer {
             }
           }.toSeq
         }
+
         TensorizeIn.SparseVector(idValues.map(_.id), idValues.map(_.value))
       }
     }
@@ -106,9 +116,7 @@ object HashingTransformer {
         if (seqValues == null || seqValues.isEmpty) {
           Seq(hashInfo.hashBucketSize)
         } else {
-          seqValues.flatMap {
-            value => HashingUtils.multiHash(value.toString, hashInfo.numHashFunctions, hashInfo.hashBucketSize)
-          }
+          seqValues.flatMap(value => HashingUtils.multiHash(value.toString, hashInfo.numHashFunctions, hashInfo.hashBucketSize))
         }
       }
     }

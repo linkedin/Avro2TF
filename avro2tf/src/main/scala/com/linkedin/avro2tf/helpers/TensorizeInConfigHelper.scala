@@ -31,14 +31,13 @@ object TensorizeInConfigHelper {
    */
   def getColsWithHashInfo(params: TensorizeInParams): Seq[String] = {
 
-    params.tensorizeInConfig.features
-      .filter(
-        feature => {
-          feature.inputFeatureInfo.get.transformConfig match {
-            case Some(config) if config.contains(HASH_INFO) => true
-            case _ => false
-          }
-        }).map(feature => feature.outputTensorInfo.name)
+    concatFeaturesAndLabels(params)
+      .filter(featureOrLabel => {
+        featureOrLabel.inputFeatureInfo.get.transformConfig match {
+          case Some(config) if config.contains(HASH_INFO) => true
+          case _ => false
+        }
+      }).map(feature => feature.outputTensorInfo.name)
   }
 
   /**
@@ -50,16 +49,17 @@ object TensorizeInConfigHelper {
   def getColsHashInfo(params: TensorizeInParams): Map[String, HashInfo] = {
 
     val colsHashInfo = new mutable.HashMap[String, HashInfo]
-    params.tensorizeInConfig.features.foreach {
-      feature => {
-        feature.inputFeatureInfo match {
+
+    concatFeaturesAndLabels(params).foreach {
+      featureOrLabel => {
+        featureOrLabel.inputFeatureInfo match {
           case Some(inputFeatureInfo) => inputFeatureInfo.transformConfig match {
             case Some(config) => config.get(HASH_INFO) match {
-              case Some(hashInfo) => {
+              case Some(hashInfo) =>
                 if (!hashInfo.contains(HASH_INFO_HASH_BUCKET_SIZE)) {
                   throw new IllegalArgumentException(
                     s"Must specify $HASH_INFO_HASH_BUCKET_SIZE for the hashInfo of tensor ${
-                      feature.outputTensorInfo.name
+                      featureOrLabel.outputTensorInfo.name
                     }"
                   )
                 }
@@ -67,11 +67,10 @@ object TensorizeInConfigHelper {
                 val numHashFunctions = hashInfo.getOrElse(HASH_INFO_NUM_HASH_FUNCTIONS, BigInt(1)).asInstanceOf[BigInt]
                   .toInt
                 val combinerType = hashInfo.getOrElse(HASH_INFO_COMBINER_TYPE, CombinerType.SUM.toString).toString
-                colsHashInfo(feature.outputTensorInfo.name) = HashInfo(
+                colsHashInfo(featureOrLabel.outputTensorInfo.name) = HashInfo(
                   hashBucketSize,
                   numHashFunctions,
                   CombinerType.withName(combinerType))
-              }
               case _ =>
             }
             case _ =>

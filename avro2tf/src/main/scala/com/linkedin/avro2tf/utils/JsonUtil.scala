@@ -26,4 +26,18 @@ object JsonUtil {
    * @return A JSON pretty formatted String
    */
   def toJsonString(value: Any): String = mapper.writeValueAsString(value)
+
+  /**
+   * Helper function to generate a map from json string
+   */
+  def toMap[V](json: String)(implicit m: Manifest[V]): Map[String, V] = {
+    if(json.trim.isEmpty)
+      return Map.empty[String, V]
+
+    fromJson[Map[String, V]](json)
+  }
+
+  private def fromJson[T](json: String)(implicit m: Manifest[T]): T = {
+    mapper.readValue[T](json)
+  }
 }

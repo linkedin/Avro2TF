@@ -32,6 +32,8 @@ trait WithLocalSparkSession {
     val sparkConf = new SparkConf()
       .registerKryoClasses(Array())
       .set(SPARK_DRIVER_BIND_ADDRESS_NAME, SPARK_DRIVER_BIND_ADDRESS_VALUE)
+      .set("spark.sql.avro.compression.codec", "deflate")
+      .set("spark.sql.avro.deflate.level", "5")
 
     SparkSession.builder
       .master(SPARK_SESSION_BUILDER_MASTER)

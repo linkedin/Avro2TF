@@ -3,8 +3,9 @@ package com.linkedin.avro2tf.parsers
 import java.io.File
 
 import scala.collection.mutable
+
 import com.linkedin.avro2tf.configs.{Feature, InputFeatureInfo, OutputTensorInfo, TensorizeInConfiguration}
-import com.linkedin.avro2tf.utils.Constants
+import com.linkedin.avro2tf.utils.{Constants, TrainingMode}
 import com.linkedin.avro2tf.utils.ConstantsForTest._
 import org.testng.Assert._
 import org.testng.annotations.Test
@@ -123,9 +124,9 @@ class TensorizeInJobParamsParserTest {
   }
 
   /**
-   * Test that the parsing fails when incorrect execution mode is passed
-   *
-   */
+    * Test that the parsing fails when incorrect execution mode is passed
+    *
+    */
   @Test(expectedExceptions = Array(classOf[IllegalArgumentException]))
   def testAvro2tfParsingFailure(): Unit = {
 
@@ -181,7 +182,7 @@ class TensorizeInJobParamsParserTest {
       externalFeaturesListPath = EXTERNAL_FEATURE_LIST_PATH_VALUE,
       tensorizeInConfig = expectedTensorizeInConfig,
       isTrainMode = ENABLE_TRAIN_MODE_VALUE.toBoolean,
-      executionMode = Constants.TEST_EXECUTION_MODE,
+      executionMode = TrainingMode.test,
       enableCache = ENABLE_CACHE_VALUE.toBoolean,
       skipConversion = SKIP_CONVERSION_VALUE.toBoolean,
       outputFormat = AVRO_RECORD.toString,

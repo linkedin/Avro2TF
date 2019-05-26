@@ -29,6 +29,16 @@
     "name" : "response",
     "dtype" : "int",
     "shape" : [ ],
-    "cardinality" : null
+    "cardinality" : 1
+  }, {
+    "name" : "wordSeq_response",
+    "dtype" : "long",
+    "shape" : [ -1 ],
+    "cardinality" : 6
+  }, {
+    "name" : "words_wideFeatures_response",
+    "dtype" : "sparseVector",
+    "shape" : [ ],
+    "cardinality" : 100
   } ]
 }

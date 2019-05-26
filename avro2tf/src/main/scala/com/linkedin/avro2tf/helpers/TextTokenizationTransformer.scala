@@ -24,11 +24,11 @@ object TextTokenizationTransformer {
 
     var tokenizedDataFrame = dataFrame
 
-    params.tensorizeInConfig.features
-      .foreach(feature => {
-        feature.inputFeatureInfo.get.transformConfig match {
+    TensorizeInConfigHelper.concatFeaturesAndLabels(params)
+      .foreach(featureOrLabel => {
+        featureOrLabel.inputFeatureInfo.get.transformConfig match {
           case Some(transformConfig) if transformConfig.contains(TOKENIZATION_CONFIG) =>
-            val outputColName = feature.outputTensorInfo.name
+            val outputColName = featureOrLabel.outputTensorInfo.name
             val regexedColName = s"$outputColName-$REGEXED_COLUMN_NAME_SUFFIX"
 
             // Text feature tokenization with regular expression

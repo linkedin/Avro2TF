@@ -9,6 +9,7 @@ import com.linkedin.avro2tf.helpers.TensorizeInConfigHelper
 import com.linkedin.avro2tf.parsers.TensorizeInParams
 import com.linkedin.avro2tf.utils.CommonUtils
 import com.linkedin.avro2tf.utils.Constants._
+
 import org.apache.hadoop.fs.{FileSystem, FileUtil, Path}
 import org.apache.spark.sql.types.StringType
 import org.apache.spark.sql.{DataFrame, Row}
@@ -35,7 +36,8 @@ class FeatureListGeneration {
     fileSystem.mkdirs(featureListPath)
 
     // Only collect those without external feature list and hash information specified in TensorizeIn configuration
-    val colsToCollectFeatureList = params.tensorizeInConfig.features.map(feature => feature.outputTensorInfo.name) diff
+    val colsToCollectFeatureList = TensorizeInConfigHelper.concatFeaturesAndLabels(params)
+      .map(featureOrLabel => featureOrLabel.outputTensorInfo.name) diff
       (processExternalFeatureList(params, fileSystem) ++ TensorizeInConfigHelper.getColsWithHashInfo(params))
 
     collectAndSaveFeatureList(dataFrame, params, fileSystem, colsToCollectFeatureList)
@@ -69,7 +71,8 @@ class FeatureListGeneration {
         val columnName = sourcePath.getName
 
         // In case user does not specify a right external feature list which they want to use
-        if (!params.tensorizeInConfig.features.map(feature => feature.outputTensorInfo.name).contains(columnName)) {
+        if (!TensorizeInConfigHelper.concatFeaturesAndLabels(params)
+          .map(featureOrLabel => featureOrLabel.outputTensorInfo.name).contains(columnName)) {
           throw new IllegalArgumentException(s"External feature list $columnName does not exist in user specified TensorizeIn output tensor names.")
         }
 
@@ -114,25 +117,25 @@ class FeatureListGeneration {
         colsToCollectFeatureList.flatMap {
           colName => {
             if (CommonUtils.isArrayOfNTV(dataFrameSchema(colName).dataType)) {
-              val nameTermValueRows = row.getAs[Seq[Row]](colName)
-              if (nameTermValueRows != null) {
-                nameTermValueRows.map(
-                  nameTermValueRow =>
-                    TensorizeIn.FeatureListEntry(
-                      colName,
-                      s"${nameTermValueRow.getAs[String](NTV_NAME)},${nameTermValueRow.getAs[String](NTV_TERM)}"))
+              val ntvs = row.getAs[Seq[Row]](colName)
+
+              if (ntvs != null) {
+                ntvs.map(
+                  ntv => TensorizeIn.FeatureListEntry(colName, s"${ntv.getAs[String](NTV_NAME)},${ntv.getAs[String](NTV_TERM)}"))
               } else {
                 Seq.empty
               }
             } else if (CommonUtils.isArrayOfString(dataFrameSchema(colName).dataType) &&
               CommonUtils.isIntegerTensor(outputTensorDataTypes(colName))) {
-              val strings = row.getAs[Seq[String]](colName)
-              if (strings != null) strings.map(string => TensorizeIn.FeatureListEntry(colName, string)) else Seq.empty
+              val columnNames = row.getAs[Seq[String]](colName)
+
+              if (columnNames != null) columnNames.map(string => TensorizeIn.FeatureListEntry(colName, string)) else Seq.empty
             } else if (dataFrameSchema(colName).dataType.isInstanceOf[StringType] &&
               CommonUtils.isIntegerTensor(outputTensorDataTypes(colName))) {
-              val string = row.getAs[String](colName)
-              if (string != null) {
-                Seq(TensorizeIn.FeatureListEntry(colName, string))
+              val columnName = row.getAs[String](colName)
+
+              if (columnName != null) {
+                Seq(TensorizeIn.FeatureListEntry(colName, columnName))
               } else {
                 Seq.empty
               }
@@ -159,10 +162,10 @@ class FeatureListGeneration {
    */
   private def writeFeatureList(params: TensorizeInParams, fileSystem: FileSystem): Unit = {
 
-    // Write feature lists to HDFS
     val tmpFeatureListPath = s"${params.workingDir.rootPath}/$TMP_FEATURE_LIST"
     var currentColumnName: String = EMPTY_STRING
     var writer: OutputStreamWriter = null
+
     fileSystem.globStatus(new Path(s"$tmpFeatureListPath/$FILE_NAME_REGEX"))
       .map(fileStatus => fileStatus.getPath.toString)
       .toSeq
