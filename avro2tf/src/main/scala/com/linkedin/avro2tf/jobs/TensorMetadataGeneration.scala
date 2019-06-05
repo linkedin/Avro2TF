@@ -13,12 +13,11 @@ import com.linkedin.avro2tf.utils.{IOUtils, JsonUtil}
 
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.sql.DataFrame
-import org.apache.spark.sql.functions.col
+import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types.{IntegerType, LongType}
 
 /**
  * The Tensor Metadata job generates tensor metadata that will be later used in training with tensors.
- *
  */
 class TensorMetadataGeneration {
 
@@ -101,19 +100,21 @@ class TensorMetadataGeneration {
    * @return A mapping of column name to its cardinality
    */
   private def getColsOfIntOrLongCardinalityMapping(dataFrame: DataFrame, params: TensorizeInParams): Map[String, Long] = {
-
-    val colsContainIntOrLongType = TensorizeInConfigHelper.concatFeaturesAndLabels(params)
+    val intOrLongColNames = TensorizeInConfigHelper.concatFeaturesAndLabels(params)
       .map(featureOrLabel => featureOrLabel.outputTensorInfo.name)
       .filter(columnName => dataFrame.schema(columnName).dataType.isInstanceOf[IntegerType] ||
         dataFrame.schema(columnName).dataType.isInstanceOf[LongType])
 
-    val maxRow = dataFrame
-      .agg(colsContainIntOrLongType.map(_ -> MAX).toMap)
-      .select(colsContainIntOrLongType.map(colName => col(s"$MAX($colName)").cast(LongType)) : _*)
-      .head()
+    val intOrLongCols = intOrLongColNames
+      .map(columnName => max(col(columnName)))
 
-    colsContainIntOrLongType
-      .map(colName => colName -> maxRow.getAs[Long](s"$MAX($colName)"))
+    val maxRow = dataFrame
+      // N.B. For improved performance, we use the .agg() overload that takes Columns instead of String expressions.
+      .agg(intOrLongCols.head, intOrLongCols.tail: _*)
+      .head
+
+    intOrLongColNames
+      .map(colName => colName -> maxRow.getAs[Number](s"$MAX($colName)").longValue())
       .toMap
   }
 

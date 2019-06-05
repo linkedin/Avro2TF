@@ -35,7 +35,7 @@ object PrepRankingDataParamsParser {
       .action((x, p) => p.copy(groupId = x.trim))
       .required()
       .text(
-        """Required
+        """Required.
           |The group id string expression.
         """.stripMargin)
 
@@ -43,7 +43,7 @@ object PrepRankingDataParamsParser {
       .action((x, p) => p.copy(groupListMaxSize = x))
       .required()
       .text(
-        """Optional.
+        """Required.
           |The maximum list length for each query.
         """.stripMargin
       )
@@ -85,7 +85,7 @@ object PrepRankingDataParamsParser {
       .action( (x, p) => p.copy(enableFilterZero = x))
       .optional()
       .text(
-        """Optional
+        """Optional.
           |Whether to filter out the zero values in features. Default is false.
         """.stripMargin
       )

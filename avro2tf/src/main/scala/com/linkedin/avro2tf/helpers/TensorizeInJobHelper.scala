@@ -62,7 +62,7 @@ object TensorizeInJobHelper {
     if (params.outputFormat.equals(TF_RECORD)) {
       val dataFramePrepared = prepareTFRecord(dataFrameRepartitioned, params)
       // SequenceExample record type supports array of array data type to be saved as TFRecord
-      dataFramePrepared.write.mode("overwrite").format("tfrecords").option("recordType", "SequenceExample")
+      dataFramePrepared.write.mode(SaveMode.Overwrite).format("tfrecords").option("recordType", "SequenceExample")
         .save(outputPath)
     } else {
       dataFrameRepartitioned.write.mode(SaveMode.Overwrite).avro(outputPath)
@@ -81,14 +81,13 @@ object TensorizeInJobHelper {
     if (numOfOutputFiles < 0) {
       if (enableShuffle) {
         dataFrame.repartition()
-      } else {}
-      dataFrame
-    } else {
-      if (enableShuffle || dataFrame.rdd.getNumPartitions < numOfOutputFiles) {
-        dataFrame.repartition(numOfOutputFiles)
       } else {
-        dataFrame.coalesce(numOfOutputFiles)
+        dataFrame
       }
+    } else if (enableShuffle || dataFrame.rdd.getNumPartitions < numOfOutputFiles) {
+      dataFrame.repartition(numOfOutputFiles)
+    } else {
+      dataFrame.coalesce(numOfOutputFiles)
     }
   }
 
