@@ -19,8 +19,6 @@ This will automatically run tests, if want to build without running tests, run:
 
     ./gradlew build -x test
 
-The jar required to run Avro2TF will be located in `./avro2tf-cli/build/libs/`.
-
 ## Usage
 Avro2TF reads raw user input data with any format supported by Spark to generate Avro or TFRecord tensorized training data.
 
@@ -28,6 +26,22 @@ Avro2TF exposes to users a JSON config to specify the tensors that a modeler wan
 For each tensor, a user should specify two kinds of information:
 1. What existing features are used to construct the tensor.
 2. The expected name, dtype, and shape of the tensor.
+
+### Use Avro2TF in a gradle project
+1. Specify the repositories hosting Avro2TF job.
+```
+repositories {
+    maven {
+        url  "https://dl.bintray.com/linkedin/maven"
+    }
+}
+```
+2. Declare Avro2TF dependency
+```
+dependencies {
+    compile 'com.linkedin.avro2tf:avro2tf:0.1.0'
+}
+```
 
 ### Input Data Requirements
 We support all data format that Spark can read, including the most popular formats Avro and ORC.
