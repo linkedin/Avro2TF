@@ -47,10 +47,9 @@ object TensorizeIn {
     if (!params.skipConversion) {
       // Convert String indices to numerical Id indices
       dataFrame = (new FeatureIndicesConversion).run(dataFrame, params)
-
-      // Save input data from Spark DataFrame to HDFS
-      TensorizeInJobHelper.saveDataToHDFS(dataFrame, params)
     }
+
+    TensorizeInJobHelper.saveDataToHDFS(dataFrame, params)
   }
 
   /**
