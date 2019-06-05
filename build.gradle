@@ -1,39 +1,16 @@
-apply plugin: "eclipse"
-apply plugin: "idea"
-
 buildscript {
   repositories {
     jcenter()
-    maven {
-      url "https://plugins.gradle.org/m2/"
-    }
   }
   dependencies {
-    classpath 'com.commercehub.gradle.plugin:gradle-avro-plugin:0.7.0'
-    classpath 'org.github.ngbinh.scalastyle:gradle-scalastyle-plugin_2.10:0.8.2'
-    // shadow allows us to build fat/shadow jars. See doc at: http://imperceptiblethoughts.com/shadow/.
-    classpath 'com.github.jengelman.gradle.plugins:shadow:2.0.1'
+    classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.+'
   }
 }
 
-repositories {
-  mavenCentral()
-}
-
-ext.deps = [
-    external: [
-        "avroMapred": "org.apache.avro:avro-mapred:1.7.7:hadoop2",
-        "jacksonDataBindFasterXML": "com.fasterxml.jackson.core:jackson-databind:2.6.7.1",
-        "scopt": "com.github.scopt:scopt_2.11:3.5.0",
-        "sparkAvro": "com.databricks:spark-avro_2.11:4.0.0",
-        "sparkCore": "org.apache.spark:spark-core_2.11:2.3.0",
-        "sparkMllib": "org.apache.spark:spark-mllib_2.11:2.3.0",
-        "sparkSql": "org.apache.spark:spark-sql_2.11:2.3.0",
-        "testng": "org.testng:testng:6.4"
-    ]
-]
-
 allprojects {
+  apply plugin: "eclipse"
+  apply plugin: "idea"
+
   group = "com.linkedin.avro2tf"
   project.version = "0.1.0"
   repositories {
@@ -41,6 +18,86 @@ allprojects {
     mavenCentral()
     maven {
       url "https://plugins.gradle.org/m2/"
+    }
+  }
+}
+
+subprojects {
+  apply plugin: 'com.jfrog.bintray'
+  apply plugin: 'maven-publish'
+  apply plugin: 'java'
+
+  task sourcesJar(type: Jar, dependsOn: classes) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+  }
+
+  task javadocJar(type: Jar, dependsOn: javadoc) {
+    classifier = 'javadoc'
+    from javadoc.destinationDir
+  }
+
+  // add javadoc/source jar tasks as artifacts
+  artifacts {
+    archives sourcesJar, javadocJar
+  }
+
+  publishing {
+    publications {
+      avro2tfPublication(MavenPublication) {
+        from components.java
+        groupId "com.linkedin.avro2tf"
+        artifactId "${project.name}"
+
+        artifact sourcesJar
+        artifact javadocJar
+
+        pom {
+          name = "${project.name}".toString()
+          description = "${project.name}".toString()
+          url = 'https://github.com/linkedin/Avro2TF'
+          licenses {
+            license {
+              name = "BSD 2-Clause"
+              url = "https://opensource.org/licenses/BSD-2-Clause"
+            }
+          }
+          developers {
+            developer {
+              id = 'zhangxuhong'
+              name = 'Xuhong Zhang'
+            }
+            developer {
+              id = 'cyzhangchenya'
+              name = 'Chenya Zhang'
+            }
+          }
+          scm {
+            connection = 'https://github.com/linkedin/Avro2TF.git'
+            developerConnection = 'git@github.com:linkedin/Avro2TF.git'
+            url = 'https://github.com/linkedin/Avro2TF'
+          }
+        }
+      }
+    }
+  }
+
+  bintray {
+    user = project.hasProperty('bintrayUser') ? project.property('bintrayUser') : System.getenv('BINTRAY_USER')
+    key = project.hasProperty('bintrayApiKey') ? project.property('bintrayApiKey') : System.getenv('BINTRAY_API_KEY')
+    publications = ['avro2tfPublication']
+    pkg {
+      repo = 'maven'
+      name = 'Avro2TF'
+      userOrg = 'linkedin'
+      licenses = ['BSD 2-CLAUSE']
+      vcsUrl = 'https://github.com/linkedin/Avro2TF.git'
+      labels = ['tensorflow', 'spark', 'avro']
+      publicDownloadNumbers = true
+      version {
+        name = project.version
+        released = new Date()
+      }
     }
   }
 }
