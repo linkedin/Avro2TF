@@ -11,19 +11,29 @@ import com.linkedin.avro2tf.utils.WithLocalSparkSession
 
 import org.apache.commons.io.FileUtils
 import org.testng.Assert._
-import org.testng.annotations.Test
+import org.testng.annotations.{DataProvider, Test}
 
 class TensorMetadataGenerationTest extends WithLocalSparkSession {
 
+  @DataProvider(name = "testFilenamesProvider")
+  def getTestFilenames: Array[Array[Object]] = {
+    Array(
+      Array(TENSORIZEIN_CONFIG_PATH_VALUE_SAMPLE, EXPECTED_TENSOR_METADATA_GENERATED_JSON_PATH_TEXT),
+      Array(
+        TENSORIZEIN_CONFIG_PATH_VALUE_SAMPLE_WITHOUT_INT_FEATURES,
+        EXPECTED_TENSOR_METADATA_WITHOUT_INT_FEATURES_GENERATED_JSON_PATH_TEXT
+      )
+    )
+  }
+
   /**
    * Test if the Tensor Metadata Generation job can finish successfully
-   *
    */
-  @Test
-  def testTensorMetadataGeneration(): Unit = {
+  @Test(dataProvider = "testFilenamesProvider")
+  def testTensorMetadataGeneration(tensorizeInConfigPath: String, expectedTensorMetadataPath: String): Unit = {
 
-    val tensorizeInConfig = new File(
-      getClass.getClassLoader.getResource(TENSORIZEIN_CONFIG_PATH_VALUE_SAMPLE).getFile
+    val tensorizeInConfigFile = new File(
+      getClass.getClassLoader.getResource(tensorizeInConfigPath).getFile
     ).getAbsolutePath
     FileUtils.deleteDirectory(new File(WORKING_DIRECTORY_TENSOR_METADATA_GENERATION_TEXT))
 
@@ -38,7 +48,7 @@ class TensorMetadataGenerationTest extends WithLocalSparkSession {
     val params = Array(
       INPUT_PATHS_NAME, INPUT_TEXT_FILE_PATHS,
       WORKING_DIRECTORY_NAME, WORKING_DIRECTORY_TENSOR_METADATA_GENERATION_TEXT,
-      TENSORIZEIN_CONFIG_PATH_NAME, tensorizeInConfig,
+      TENSORIZEIN_CONFIG_PATH_NAME, tensorizeInConfigFile,
       EXTERNAL_FEATURE_LIST_PATH_NAME, externalFeatureListFullPath
     )
 
@@ -51,7 +61,7 @@ class TensorMetadataGenerationTest extends WithLocalSparkSession {
     (new TensorMetadataGeneration).run(dataFrameTransformed, tensorizeInParams)
 
     // Check if tensor metadata JSON file is correctly generated
-    val expectedTensorMetadata = getClass.getClassLoader.getResource(EXPECTED_TENSOR_METADATA_GENERATED_JSON_PATH_TEXT).getFile
+    val expectedTensorMetadata = getClass.getClassLoader.getResource(expectedTensorMetadataPath).getFile
     assertEquals(
       Source.fromFile(tensorizeInParams.workingDir.tensorMetadataPath).mkString,
       Source.fromFile(expectedTensorMetadata).mkString

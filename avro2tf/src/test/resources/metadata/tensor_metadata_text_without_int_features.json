@@ -1,0 +1,19 @@
+{
+  "features" : [ {
+    "name" : "words_term",
+    "dtype" : "long",
+    "shape" : [ -1 ],
+    "cardinality" : 4
+  }, {
+    "name" : "words_wideFeatures",
+    "dtype" : "sparseVector",
+    "shape" : [ ],
+    "cardinality" : 100
+  } ],
+  "labels" : [ {
+    "name" : "words_wideFeatures_response",
+    "dtype" : "sparseVector",
+    "shape" : [ ],
+    "cardinality" : 100
+  } ]
+}

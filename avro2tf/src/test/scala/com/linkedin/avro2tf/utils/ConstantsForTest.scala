@@ -48,6 +48,8 @@ object ConstantsForTest {
   final val TENSORIZEIN_CONFIG_PATH_VALUE_MOVIELENS= "configs/tensorizeIn_config_movielens.json"
   final val TENSORIZEIN_CONFIG_PATH_VALUE_MOVIELENS_RANK = "configs/tensorizeIn_config_movielens_rank.json"
   final val TENSORIZEIN_CONFIG_PATH_VALUE_SAMPLE = "configs/tensorizeIn_config_sample.json"
+  final val TENSORIZEIN_CONFIG_PATH_VALUE_SAMPLE_WITHOUT_INT_FEATURES =
+    "configs/tensorizeIn_config_without_int_features.json"
   final val TENSORIZEIN_CONFIG_TEST_ARRAY = Array.empty[Int]
   final val TENSORIZEIN_CONFIG_TEST_INFO = "testInfo"
   final val TENSORIZEIN_CONFIG_TEST_VALUE = "test_value"
@@ -64,6 +66,8 @@ object ConstantsForTest {
   final val WORKING_DIRECTORY_AVRO2TF = "/tmp/tensorizeIn-test"
   final val WORKING_DIRECTORY_AVRO2TF_MOVIELENS = "/tmp/tensorizeIn-test-movielens"
   final val EXPECTED_TENSOR_METADATA_GENERATED_JSON_PATH_TEXT = "metadata/tensor_metadata_text_1.json"
+  final val EXPECTED_TENSOR_METADATA_WITHOUT_INT_FEATURES_GENERATED_JSON_PATH_TEXT =
+    "metadata/tensor_metadata_text_without_int_features.json"
   final val EXTERNAL_FEATURE_LIST_FILE_NAME_MOVIELENS = "genreFeatures_term"
   final val EXTERNAL_FEATURE_LIST_FILE_NAME_TEXT = "words_term"
   final val EXTERNAL_FEATURE_LIST_PATH_TEXT = "/external-feature-list-text"
