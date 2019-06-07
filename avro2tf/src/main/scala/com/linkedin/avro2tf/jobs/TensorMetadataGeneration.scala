@@ -105,17 +105,21 @@ class TensorMetadataGeneration {
       .filter(columnName => dataFrame.schema(columnName).dataType.isInstanceOf[IntegerType] ||
         dataFrame.schema(columnName).dataType.isInstanceOf[LongType])
 
-    val intOrLongCols = intOrLongColNames
-      .map(columnName => max(col(columnName)))
+    if (intOrLongColNames.isEmpty) {
+      Map.empty
+    } else {
+      val intOrLongCols = intOrLongColNames
+        .map(columnName => max(col(columnName)))
 
-    val maxRow = dataFrame
-      // N.B. For improved performance, we use the .agg() overload that takes Columns instead of String expressions.
-      .agg(intOrLongCols.head, intOrLongCols.tail: _*)
-      .head
+      val maxRow = dataFrame
+        // N.B. For improved performance, we use the .agg() overload that takes Columns instead of String expressions.
+        .agg(intOrLongCols.head, intOrLongCols.tail: _*)
+        .head
 
-    intOrLongColNames
-      .map(colName => colName -> maxRow.getAs[Number](s"$MAX($colName)").longValue())
-      .toMap
+      intOrLongColNames
+        .map(colName => colName -> maxRow.getAs[Number](s"$MAX($colName)").longValue())
+        .toMap
+    }
   }
 
   /**
