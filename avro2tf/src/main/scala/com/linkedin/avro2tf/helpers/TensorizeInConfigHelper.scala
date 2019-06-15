@@ -63,9 +63,8 @@ object TensorizeInConfigHelper {
                     }"
                   )
                 }
-                val hashBucketSize = hashInfo(HASH_INFO_HASH_BUCKET_SIZE).asInstanceOf[BigInt].toInt
-                val numHashFunctions = hashInfo.getOrElse(HASH_INFO_NUM_HASH_FUNCTIONS, BigInt(1)).asInstanceOf[BigInt]
-                  .toInt
+                val hashBucketSize = hashInfo(HASH_INFO_HASH_BUCKET_SIZE).asInstanceOf[Int]
+                val numHashFunctions = hashInfo.getOrElse(HASH_INFO_NUM_HASH_FUNCTIONS, 1).asInstanceOf[Int]
                 val combinerType = hashInfo.getOrElse(HASH_INFO_COMBINER_TYPE, CombinerType.SUM.toString).toString
                 colsHashInfo(featureOrLabel.outputTensorInfo.name) = HashInfo(
                   hashBucketSize,
