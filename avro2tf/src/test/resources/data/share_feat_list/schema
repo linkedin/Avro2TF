@@ -1,0 +1,103 @@
+{
+  "type" : "record",
+  "name" : "TUPLE_0",
+  "fields" : [ {
+    "name" : "mon_fruits",
+    "type" : [ {
+      "type" : "array",
+      "items" : [ {
+        "type" : "record",
+        "name" : "TUPLE_1",
+        "fields" : [ {
+          "name" : "name",
+          "type" : [ "string" ]
+        }, {
+          "name" : "term",
+          "type" : [ "string" ]
+        }, {
+          "name" : "value",
+          "type" : [ "float" ]
+        } ]
+      } ]
+    } ]
+  }, {
+    "name" : "tue_fruits",
+    "type" : [ {
+      "type" : "array",
+      "items" : [ {
+        "type" : "record",
+        "name" : "TUPLE_2",
+        "fields" : [ {
+          "name" : "name",
+          "type" : [ "string" ]
+        }, {
+          "name" : "term",
+          "type" : [ "string" ]
+        }, {
+          "name" : "value",
+          "type" : [ "float" ]
+        } ]
+      } ]
+    } ]
+  }, {
+    "name" : "wed_fruits",
+    "type" : [ {
+      "type" : "array",
+      "items" : [ {
+        "type" : "record",
+        "name" : "TUPLE_3",
+        "fields" : [ {
+          "name" : "name",
+          "type" : [ "string" ]
+        }, {
+          "name" : "term",
+          "type" : [ "string" ]
+        }, {
+          "name" : "value",
+          "type" : [ "float" ]
+        } ]
+      } ]
+    } ]
+  }, {
+    "name" : "thu_fruits",
+    "type" : [ {
+      "type" : "array",
+      "items" : [ {
+        "type" : "record",
+        "name" : "TUPLE_4",
+        "fields" : [ {
+          "name" : "name",
+          "type" : [ "string" ]
+        }, {
+          "name" : "term",
+          "type" : [ "string" ]
+        }, {
+          "name" : "value",
+          "type" : [ "float" ]
+        } ]
+      } ]
+    } ]
+  }, {
+    "name" : "words_before",
+    "type" : [ {
+      "type" : "array",
+      "items" : [ {
+        "type" : "string"
+      } ]
+    } ]
+  }, {
+    "name" : "words_after",
+    "type" : [ {
+      "type" : "array",
+      "items" : [ {
+        "type" : "string"
+      } ]
+    } ]
+  }, {
+    "name" : "send",
+    "type" : [ "string" ]
+  }, {
+    "name" : "receive",
+    "type" : [ "string" ]
+  } ]
+}

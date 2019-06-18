@@ -20,6 +20,8 @@ object ConstantsForTest {
   final val FEATURE_WORD_SEQ_COL_NAME = "wordSeq"
   final val FEATURE_WORD_SEQ_HASHED_COL_NAME = "wordSeq_hashed"
   final val FEATURE_WORDS_WIDE_FEATURES_COL_NAME = "words_wideFeatures"
+  final val FEATURE_LIST_SHARING_EXPECTED_VALUE_PATH_CASE1 = "data/share_feat_list/feat_lists_case_1"
+  final val FEATURE_LIST_SHARING_EXPECTED_VALUE_PATH_CASE2 = "data/share_feat_list/feat_lists_case_2"
   final val INPUT_DATE_RANGE_NAME = "--input-date-range"
   final val INPUT_DATE_RANGE_VALUE = "20190101-20190117"
   final val INPUT_DATE_RANGE_VALUE_START = "20190101"
@@ -30,6 +32,7 @@ object ConstantsForTest {
   final val INPUT_PATHS_NAME = "--input-paths"
   final val INPUT_PATHS_VALUE = "/input/123"
   final val INPUT_TEXT_FILE_PATHS = "src/test/resources/data/text.avro"
+  final val INPUT_SHARE_FEATURE_PATH = "src/test/resources/data/share_feat_list/test_share_feature_list.avro"
   final val MIN_PARTS_NAME = "--min-parts"
   final val MIN_PARTS_VALUE = "100"
   final val NUM_OUTPUT_FILES_NAME = "--num-output-files"
@@ -45,15 +48,23 @@ object ConstantsForTest {
   final val TENSORIZEIN_CONFIG_PATH_VALUE_3 = "configs/tensorizeIn_config_3.json"
   final val TENSORIZEIN_CONFIG_PATH_VALUE_4 = "configs/tensorizeIn_config_4.json"
   final val TENSORIZEIN_CONFIG_PATH_VALUE_5 = "configs/tensorizeIn_config_5.json"
-  final val TENSORIZEIN_CONFIG_PATH_VALUE_MOVIELENS= "configs/tensorizeIn_config_movielens.json"
+  final val TENSORIZEIN_CONFIG_PATH_VALUE_MOVIELENS = "configs/tensorizeIn_config_movielens.json"
   final val TENSORIZEIN_CONFIG_PATH_VALUE_MOVIELENS_RANK = "configs/tensorizeIn_config_movielens_rank.json"
   final val TENSORIZEIN_CONFIG_PATH_VALUE_SAMPLE = "configs/tensorizeIn_config_sample.json"
   final val TENSORIZEIN_CONFIG_PATH_VALUE_SAMPLE_WITHOUT_INT_FEATURES =
     "configs/tensorizeIn_config_without_int_features.json"
+  final val TENSORIZEIN_CONFIG_PATH_VALUE_SHARE_FEATURE = "configs/tensorizeIn_config_share_feature.json"
   final val TENSORIZEIN_CONFIG_TEST_ARRAY = Array.empty[Int]
   final val TENSORIZEIN_CONFIG_TEST_INFO = "testInfo"
   final val TENSORIZEIN_CONFIG_TEST_VALUE = "test_value"
   final val TENSORIZEIN_CONFIG_TEST_LONG_VALUE = "long"
+  final val TENSORS_SHARING_FEATURE_LISTS_NAME = "--tensors-sharing-feature-lists"
+  final val TENSORS_SHARING_FEATURE_LISTS_VALUE_CASE_1 = "comments_after,comments_before; " +
+    "fruits_day1,fruits_day2,fruits_day3;receive_platform,send_platform"
+  final val TENSORS_SHARING_FEATURE_LISTS_VALUE_CASE_2 = "comments_after,comments_before; " +
+    "fruits_day1,fruits_day2;receive_platform,send_platform"
+  final val TENSORS_SHARING_FEATURE_LISTS_VALUE_CASE_3 = "comments_after,comments_before; " +
+    "fruits_day1,fruits_day4;receive_platform,send_platform"
   final val TF_RECORD = "tfrecord"
   final val WORKING_DIRECTORY_NAME = "--working-dir"
   final val WORKING_DIRECTORY_VALUE = "/output/456"
@@ -65,6 +76,7 @@ object ConstantsForTest {
   final val WORKING_DIRECTORY_INDICES_CONVERSION = "/tmp/indices-conversion-test"
   final val WORKING_DIRECTORY_AVRO2TF = "/tmp/tensorizeIn-test"
   final val WORKING_DIRECTORY_AVRO2TF_MOVIELENS = "/tmp/tensorizeIn-test-movielens"
+  final val EXPECTED_FEATURE_LIST_W_COUNTS_PATH = "data/share_feat_list/feat_lists_w_counts"
   final val EXPECTED_TENSOR_METADATA_GENERATED_JSON_PATH_TEXT = "metadata/tensor_metadata_text_1.json"
   final val EXPECTED_TENSOR_METADATA_WITHOUT_INT_FEATURES_GENERATED_JSON_PATH_TEXT =
     "metadata/tensor_metadata_text_without_int_features.json"

@@ -8,7 +8,7 @@ import com.linkedin.avro2tf.configs.{Feature, InputFeatureInfo, OutputTensorInfo
 import com.linkedin.avro2tf.utils.{Constants, TrainingMode}
 import com.linkedin.avro2tf.utils.ConstantsForTest._
 import org.testng.Assert._
-import org.testng.annotations.Test
+import org.testng.annotations.{DataProvider, Test}
 
 /**
  * Test the parser file for TensorizeIn job parameters from command line arguments
@@ -25,6 +25,7 @@ class TensorizeInJobParamsParserTest {
 
     // Get expected TensorizeIn configuration and parameters
     val expectedTensorizeInConfig = getExpectedTensorizeInConfig
+
     val expectedTensorizeInParams = getExpectedTensorizeInParams(expectedTensorizeInConfig)
 
     // Get actual TensorizeIn configuration and parameters
@@ -124,9 +125,9 @@ class TensorizeInJobParamsParserTest {
   }
 
   /**
-    * Test that the parsing fails when incorrect execution mode is passed
-    *
-    */
+   * Test that the parsing fails when incorrect execution mode is passed
+   *
+   */
   @Test(expectedExceptions = Array(classOf[IllegalArgumentException]))
   def testAvro2tfParsingFailure(): Unit = {
 
@@ -141,6 +142,88 @@ class TensorizeInJobParamsParserTest {
       EXECUTION_MODE, "incorrect"
     )
     TensorizeInJobParamsParser.parse(params)
+  }
+
+  /**
+   * Data provider for feature indices conversion test
+   *
+   */
+  @DataProvider()
+  def invalidFeatureSharingSetting(): Array[Array[String]] = {
+
+    Array(
+      Array("a; b,c"),
+      Array("a,b;b,c,d"),
+      Array(""),
+      Array(";")
+    )
+  }
+
+  /**
+   * Test that parsing fails when incorrect feature list sharing settings are passed.
+   * Case a) some feature list group contains only one output tensor
+   * Case b) the same output tensor appears in more than 1 feature list sharing group
+   *
+   */
+  @Test(expectedExceptions = Array(classOf[IllegalArgumentException]), dataProvider = "invalidFeatureSharingSetting")
+  def testInvalidFeatureSharingSettings(tensors_sharing_feature_lists: String): Unit = {
+
+    val tensorizeInConfig = new File(
+      getClass.getClassLoader.getResource(TENSORIZEIN_CONFIG_PATH_VALUE_2).getFile
+    ).getAbsolutePath
+
+    val params = Array(
+      INPUT_PATHS_NAME, INPUT_PATHS_VALUE,
+      WORKING_DIRECTORY_NAME, WORKING_DIRECTORY_VALUE,
+      TENSORIZEIN_CONFIG_PATH_NAME, tensorizeInConfig,
+      TENSORS_SHARING_FEATURE_LISTS_NAME, tensors_sharing_feature_lists
+    )
+    TensorizeInJobParamsParser.parse(params)
+  }
+
+  /**
+   * Data provider for feature list sharing configurations
+   *
+   */
+  @DataProvider()
+  def validFeatureSharingSetting(): Array[Array[Any]] = {
+
+    Array(
+      Array("a,b", Array(Array("a", "b"))),
+      Array("a,b;", Array(Array("a", "b"))),
+      Array("  a, b ;", Array(Array("a", "b"))),
+      Array(" a, b ; c,d,e;", Array(Array("a", "b"), Array("c", "d", "e"))),
+      Array(" a, b ; c,d,e ", Array(Array("a", "b"), Array("c", "d", "e")))
+    )
+  }
+
+  /**
+   * Test if the command line argument parser can work properly when shared feature lists settings are added
+   *
+   */
+  @Test(dataProvider = "validFeatureSharingSetting")
+  def testParseSharingFeatureLists(config_input: String, parsed_param: Array[Array[String]]): Unit = {
+
+    // Get expected TensorizeIn configuration and parameters
+    val expectedTensorizeInConfig = getExpectedTensorizeInConfig
+    var expectedTensorizeInParams = getExpectedTensorizeInParams(expectedTensorizeInConfig)
+    // Update the expected TensorizeIn params to include feature list sharing configurations
+    expectedTensorizeInParams = expectedTensorizeInParams
+      .copy(tensorsSharingFeatureLists = parsed_param)
+
+    // Get actual TensorizeIn configuration and parameters
+    val tensorizeInConfigPath = new File(
+      getClass.getClassLoader.getResource(TENSORIZEIN_CONFIG_PATH_VALUE_5).getFile
+    ).getAbsolutePath
+    var arguments = getCommandLineArguments(tensorizeInConfigPath)
+    arguments = arguments ++ Seq(TENSORS_SHARING_FEATURE_LISTS_NAME, config_input)
+    val actualTensorizeInParams = TensorizeInJobParamsParser.parse(arguments)
+
+    // Test assert equals on TensorizeIn parameters without testing TensorizeIn configuration
+    testParamsEqualsWithoutTensorizeInConfig(actualTensorizeInParams, expectedTensorizeInParams)
+
+    // Test assert equals on a sample of TensorizeIn configuration
+    testTensorizeInConfigEquals(actualTensorizeInParams, expectedTensorizeInParams)
   }
 
   /**
@@ -186,7 +269,8 @@ class TensorizeInJobParamsParserTest {
       enableCache = ENABLE_CACHE_VALUE.toBoolean,
       skipConversion = SKIP_CONVERSION_VALUE.toBoolean,
       outputFormat = AVRO_RECORD.toString,
-      extraColumnsToKeep = Seq.empty
+      extraColumnsToKeep = Seq.empty,
+      tensorsSharingFeatureLists = Array[Array[String]]()
     )
   }
 
@@ -208,11 +292,12 @@ class TensorizeInJobParamsParserTest {
   private def getExpectedFeature: Feature = {
 
     Feature(
-      inputFeatureInfo = Some(InputFeatureInfo(
-        Some(TENSORIZEIN_CONFIG_TEST_VALUE),
-        None,
-        Some(Map(TENSORIZEIN_CONFIG_TEST_INFO -> Map(TENSORIZEIN_CONFIG_TEST_INFO -> TENSORIZEIN_CONFIG_TEST_VALUE)))
-      )),
+      inputFeatureInfo = Some(
+        InputFeatureInfo(
+          Some(TENSORIZEIN_CONFIG_TEST_VALUE),
+          None,
+          Some(Map(TENSORIZEIN_CONFIG_TEST_INFO -> Map(TENSORIZEIN_CONFIG_TEST_INFO -> TENSORIZEIN_CONFIG_TEST_VALUE)))
+        )),
       outputTensorInfo = OutputTensorInfo(
         TENSORIZEIN_CONFIG_TEST_VALUE,
         TENSORIZEIN_CONFIG_TEST_LONG_VALUE,
@@ -229,11 +314,12 @@ class TensorizeInJobParamsParserTest {
   private def getExpectedLabel: Feature = {
 
     Feature(
-      inputFeatureInfo = Some(InputFeatureInfo(
-        Some(TENSORIZEIN_CONFIG_TEST_VALUE),
-        None,
-        None
-      )),
+      inputFeatureInfo = Some(
+        InputFeatureInfo(
+          Some(TENSORIZEIN_CONFIG_TEST_VALUE),
+          None,
+          None
+        )),
       outputTensorInfo = OutputTensorInfo(
         TENSORIZEIN_CONFIG_TEST_VALUE,
         TENSORIZEIN_CONFIG_TEST_LONG_VALUE,
@@ -248,7 +334,9 @@ class TensorizeInJobParamsParserTest {
    * @param actualParams Actual TensorizeIn parameters
    * @param expectedParams Expected TensorizeIn parameters
    */
-  private def testParamsEqualsWithoutTensorizeInConfig(actualParams: TensorizeInParams, expectedParams: TensorizeInParams): Unit = {
+  private def testParamsEqualsWithoutTensorizeInConfig(
+    actualParams: TensorizeInParams,
+    expectedParams: TensorizeInParams): Unit = {
 
     assertEquals(actualParams.enableCache, expectedParams.enableCache)
     assertEquals(actualParams.enableShuffle, expectedParams.enableShuffle)

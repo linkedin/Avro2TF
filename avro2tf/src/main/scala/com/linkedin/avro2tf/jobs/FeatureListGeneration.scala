@@ -11,6 +11,7 @@ import com.linkedin.avro2tf.utils.CommonUtils
 import com.linkedin.avro2tf.utils.Constants._
 
 import org.apache.hadoop.fs.{FileSystem, FileUtil, Path}
+import org.apache.spark.sql.functions.{col, concat_ws}
 import org.apache.spark.sql.types.StringType
 import org.apache.spark.sql.{DataFrame, Row}
 
@@ -40,8 +41,23 @@ class FeatureListGeneration {
       .map(featureOrLabel => featureOrLabel.outputTensorInfo.name) diff
       (processExternalFeatureList(params, fileSystem) ++ TensorizeInConfigHelper.getColsWithHashInfo(params))
 
+    // Make sure tensors with feature list sharing settings all exist in colsToCollectFeatureList
+    if (!params.tensorsSharingFeatureLists.isEmpty) {
+      val tensorsGroups = params.tensorsSharingFeatureLists
+      val tensorsInGroups = tensorsGroups.flatten
+      if (!tensorsInGroups.forall(tensor => colsToCollectFeatureList.contains(tensor))) {
+        throw new IllegalArgumentException(
+          s"Settings in --tensors-sharing-feature-lists conflict with other " +
+            s"settings. Some tensors in --tensors-sharing-feature-lists are not part of those that the job is " +
+            s"collecting feature list for. Most likely, they have external feature list or has hashing setting." +
+            s"Tensors in --tensors-sharing-feature-lists: $tensorsGroups. Tensors the job collect feature list for: " +
+            s"$colsToCollectFeatureList.")
+      }
+    }
+
     collectAndSaveFeatureList(dataFrame, params, fileSystem, colsToCollectFeatureList)
-    writeFeatureList(params, fileSystem)
+    val ntvTensors = getNtvTensors(dataFrame, colsToCollectFeatureList)
+    writeFeatureList(params, fileSystem, ntvTensors)
 
     fileSystem.close()
   }
@@ -93,12 +109,36 @@ class FeatureListGeneration {
   }
 
   /**
+   * Get output tensor names for output tensors of name,term,value format
+   *
+   * @param dataFrame Input data Spark DataFrame
+   * @param colsToCollectFeatureList A sequence of columns to collect feature lists
+   * @return A set of output tensor names for NTV tensors
+   */
+  private def getNtvTensors(
+    dataFrame: DataFrame,
+    colsToCollectFeatureList: Seq[String]): Set[String] = {
+
+    val dataFrameSchema = dataFrame.schema
+    val ntvTensors = new mutable.HashSet[String]()
+    colsToCollectFeatureList.foreach {
+      colName => {
+        if (CommonUtils.isArrayOfNTV(dataFrameSchema(colName).dataType)) {
+          ntvTensors += colName
+        }
+      }
+    }
+    ntvTensors.toSet
+  }
+
+  /**
    * Collect and save feature list
    *
    * @param dataFrame Input data Spark DataFrame
    * @param params TensorizeIn parameters specified by user
    * @param fileSystem A file system
    * @param colsToCollectFeatureList A sequence of columns to collect feature lists
+   * @return A set of output tensor names for NTV tensors
    */
   private def collectAndSaveFeatureList(
     dataFrame: DataFrame,
@@ -118,10 +158,10 @@ class FeatureListGeneration {
           colName => {
             if (CommonUtils.isArrayOfNTV(dataFrameSchema(colName).dataType)) {
               val ntvs = row.getAs[Seq[Row]](colName)
-
               if (ntvs != null) {
                 ntvs.map(
-                  ntv => TensorizeIn.FeatureListEntry(colName, s"${ntv.getAs[String](NTV_NAME)},${ntv.getAs[String](NTV_TERM)}"))
+                  ntv => TensorizeIn
+                    .FeatureListEntry(colName, s"${ntv.getAs[String](NTV_NAME)},${ntv.getAs[String](NTV_TERM)}"))
               } else {
                 Seq.empty
               }
@@ -129,7 +169,11 @@ class FeatureListGeneration {
               CommonUtils.isIntegerTensor(outputTensorDataTypes(colName))) {
               val columnNames = row.getAs[Seq[String]](colName)
 
-              if (columnNames != null) columnNames.map(string => TensorizeIn.FeatureListEntry(colName, string)) else Seq.empty
+              if (columnNames != null) {
+                columnNames.map(string => TensorizeIn.FeatureListEntry(colName, string))
+              } else {
+                Seq.empty
+              }
             } else if (dataFrameSchema(colName).dataType.isInstanceOf[StringType] &&
               CommonUtils.isIntegerTensor(outputTensorDataTypes(colName))) {
               val columnName = row.getAs[String](colName)
@@ -147,11 +191,74 @@ class FeatureListGeneration {
         }
       }
     }
-      .distinct
-      .sort(COLUMN_NAME)
-      .map(featureListEntry => s"${featureListEntry.columnName},${featureListEntry.featureEntry}")
-      .rdd
-      .saveAsTextFile(tmpFeatureListPath)
+      .groupBy(COLUMN_NAME, FEATURE_ENTRY)
+      .count()
+      .select(
+        col(COLUMN_NAME),
+        concat_ws(SEPARATOR_FEATURE_COUNT, col(FEATURE_ENTRY), col(COUNT)).name(FEATURE_ENTRY))
+      .write
+      .partitionBy(COLUMN_NAME)
+      .text(tmpFeatureListPath)
+  }
+
+  /**
+   * Write feature list to disk for a list of (feature entry, count) pairs
+   *
+   * @param p Path to file to create and write
+   * @param featureEntriesWCount a list of (feature entry, count) pairs
+   * @param prefix If provided, write out prefix + comma + feature entry. Otherwise write out feature entry.
+   * @param fileSystem FileSystem
+   */
+  private def writeFeatureEntriesWCountToDisk(
+    p: Path,
+    featureEntriesWCount: Seq[(String, Int)],
+    prefix: Option[String],
+    fileSystem: FileSystem): Unit = {
+
+    val outputStream = fileSystem.create(p)
+    val writer = new OutputStreamWriter(outputStream, UTF_8.name())
+    prefix match {
+      case Some(prefixString)
+      => {
+        featureEntriesWCount.foreach {
+          case (featureEntry, _) => writer.write(s"$prefixString,$featureEntry\n")
+        }
+      }
+      case None => {
+        featureEntriesWCount.foreach {
+          case (featureEntry, _) => writer.write(s"$featureEntry\n")
+        }
+      }
+    }
+    writer.close()
+  }
+
+  /**
+   * Get groups of tensor names for whom final feature lists should be written for.
+   *
+   * @param params TensorizeIn parameters specified by user
+   * @param fileSystem A file system
+   * @return An array of string arrays. Each inner array is a group of tensor(s) that share the same feature list.
+   **/
+  private def getTensorGroupsToWriteFeatureLists(
+    params: TensorizeInParams,
+    fileSystem: FileSystem): Array[Array[String]] = {
+
+    // first get a set of tensor names for which temporary feature list files have been collected
+    val allColsToWriteFeatureLists = new mutable.HashSet[String]()
+    val tmpFeatureListDir = s"${params.workingDir.rootPath}/$TMP_FEATURE_LIST"
+    allColsToWriteFeatureLists ++= fileSystem.listStatus(new Path(tmpFeatureListDir)).filter(_.isDirectory())
+      .filter(_.getPath.getName.startsWith(s"$COLUMN_NAME=")).map(_.getPath.getName.split(s"$COLUMN_NAME=").last)
+    val tensorGroups = new mutable.ArrayBuffer[Array[String]]
+    if (!params.tensorsSharingFeatureLists.isEmpty) {
+      val tensorSharingGroups = params.tensorsSharingFeatureLists
+      tensorGroups ++= tensorSharingGroups
+      allColsToWriteFeatureLists --= tensorSharingGroups.flatten.toSet
+    }
+    if (allColsToWriteFeatureLists.nonEmpty) {
+      tensorGroups ++= allColsToWriteFeatureLists.map(tensor => Array(tensor))
+    }
+    tensorGroups.toArray
   }
 
   /**
@@ -160,46 +267,81 @@ class FeatureListGeneration {
    * @param params TensorizeIn parameters specified by user
    * @param fileSystem A file system
    */
-  private def writeFeatureList(params: TensorizeInParams, fileSystem: FileSystem): Unit = {
+  private def writeFeatureList(
+    params: TensorizeInParams,
+    fileSystem: FileSystem,
+    ntvTensors: Set[String]): Unit = {
 
-    val tmpFeatureListPath = s"${params.workingDir.rootPath}/$TMP_FEATURE_LIST"
-    var currentColumnName: String = EMPTY_STRING
-    var writer: OutputStreamWriter = null
-
-    fileSystem.globStatus(new Path(s"$tmpFeatureListPath/$FILE_NAME_REGEX"))
-      .map(fileStatus => fileStatus.getPath.toString)
-      .toSeq
-      .sortWith((path1, path2) => path1 < path2)
-      .foreach(
-        fileName => {
-          val inputStream = fileSystem.open(new Path(fileName))
-
-          scala.io.Source.fromInputStream(inputStream, UTF_8.name())
-            .getLines()
-            .foreach(
-              line => {
-                // Get column name of FeatureListEntry
-                val columnName = line.split(SPLIT_REGEX).head
-
-                // Reassign the current column name variable if column name is different
-                if (columnName != currentColumnName) {
-                  currentColumnName = columnName
-                  val outputStream = fileSystem.create(
-                    new Path(s"${params.workingDir.featureListPath}/$columnName")
-                  )
-
-                  if (writer != null) writer.close()
-                  writer = new OutputStreamWriter(outputStream, UTF_8.name())
-                }
-
-                // Get the feature entry of FeatureListEntry
-                val featureListEntry = line.stripPrefix(columnName + SPLIT_REGEX)
-                writer.write(s"$featureListEntry\n")
-              })
-          inputStream.close()
-        })
-
-    if (writer != null) writer.close()
-    fileSystem.delete(new Path(tmpFeatureListPath), ENABLE_RECURSIVE)
+    val tensorGroups = getTensorGroupsToWriteFeatureLists(params, fileSystem)
+    val tmpFeatureListDir = s"${params.workingDir.rootPath}/$TMP_FEATURE_LIST"
+    // merge and write feature lists for output tensors with shared feature list setting
+    tensorGroups.foreach( // each element is an array containing the output tensor names sharing one feature list
+      tensors => {
+        // for the current group of tensors sharing one feature list, accumulate feature entry count in a hashmap
+        val featureEntriesWCount = new mutable.HashMap[String, Int]().withDefaultValue(0)
+        // get a list of tensors where a prefix needs to be removed when accumulating feature entry count and added back
+        // when writing the feature entries out. These are ntv tensors with feature sharing setting
+        val tensorsWithPrefix = new mutable.HashMap[String, String]()
+        tensors.foreach( // go over the temporary feature list files for each output tensor
+          tensor => {
+            // determine whether the tensor needs a special prefix treatment
+            val needProcessPrefix: Boolean = tensors.size > 1 && ntvTensors.contains(tensor)
+            val prefix = new mutable.HashSet[String]() // to make sure there is only one prefix per tensor
+            val featureListDirForCurrentTensor = new Path(s"$tmpFeatureListDir/$COLUMN_NAME=$tensor")
+            val filesIterator = fileSystem.listFiles(featureListDirForCurrentTensor, ENABLE_RECURSIVE)
+            while (filesIterator.hasNext) {
+              val tmpFeatureListPath = filesIterator.next().getPath
+              val fileInputStream = fileSystem.open(tmpFeatureListPath)
+              scala.io.Source.fromInputStream(fileInputStream, UTF_8.name()).getLines()
+                .foreach(
+                  line => {
+                    // the format of each line is feature_entry,count
+                    // first get feature_entry, if need process prefix (ntv), remove prefix from feature_entry, make
+                    // sure prefix is unique
+                    val lineWithoutCount = line.split(SPLIT_REGEX).head
+                    val featureEntry = if (needProcessPrefix) {
+                      val prefixSplit = lineWithoutCount.split(',')
+                      val prefixCurrentLine = prefixSplit.head
+                      if (prefix.isEmpty) {
+                        prefix += prefixCurrentLine
+                        tensorsWithPrefix += tensor -> prefixCurrentLine
+                      }
+                      else {
+                        if (!prefix.contains(prefixCurrentLine)) {
+                          throw new IllegalArgumentException(
+                            s"Output tensors of NTV type with feature sharing settings can only have 1 value for " +
+                              s"'name' across the data set. Detected ${prefix} and ${prefixCurrentLine} for ${tensor}."
+                          )
+                        }
+                      }
+                      prefixSplit.last
+                    }
+                    else {
+                      lineWithoutCount
+                    }
+                    val count = line.split(SEPARATOR_FEATURE_COUNT).last.toInt
+                    featureEntriesWCount(featureEntry) += count
+                  })
+              fileInputStream.close()
+            }
+          }
+        )
+        // sort the feature list by count and then by feature entry (alphabetically)
+        val featureList = featureEntriesWCount.toSeq.sortBy { case (k, v) => (-v, k) }
+        // write out feature list file for each output tensor in the current group
+        tensors.foreach(
+          tensor => {
+            val outputPath = new Path(s"${params.workingDir.featureListPath}/$tensor")
+            val prefix: Option[String] = if (tensorsWithPrefix.contains(tensor)) {
+              Some(tensorsWithPrefix(tensor))
+            }
+            else {
+              None
+            }
+            writeFeatureEntriesWCountToDisk(outputPath, featureList, prefix, fileSystem)
+          }
+        )
+      }
+    )
   }
 }

@@ -78,6 +78,7 @@ object TensorizeInJobHelper {
    * @return The repartitioned data frame
    */
   def repartitionData(dataFrame: DataFrame, numOfOutputFiles: Int, enableShuffle: Boolean): DataFrame = {
+
     if (numOfOutputFiles < 0) {
       if (enableShuffle) {
         dataFrame.repartition()
@@ -127,10 +128,24 @@ object TensorizeInJobHelper {
       }
     }
     params.extraColumnsToKeep.foreach {
-      columnName => if(columnName.contains(Constants.COLUMN_NAME_ALIAS_DELIMITER)){
-        val exprAndAlias = columnName.trim.split(Constants.COLUMN_NAME_ALIAS_DELIMITER)
-        require(exprAndAlias.length == 2, s"Invalid column name specified: $columnName in --extra-columns-to-keep")
-        require(!outputTensors.contains(exprAndAlias.last), s"Column alias: ${exprAndAlias.last} already used by output tensors")
+      columnName =>
+        if (columnName.contains(Constants.COLUMN_NAME_ALIAS_DELIMITER)) {
+          val exprAndAlias = columnName.trim.split(Constants.COLUMN_NAME_ALIAS_DELIMITER)
+          require(exprAndAlias.length == 2, s"Invalid column name specified: $columnName in --extra-columns-to-keep")
+          require(
+            !outputTensors.contains(exprAndAlias.last),
+            s"Column alias: ${exprAndAlias.last} already used by output tensors")
+        }
+    }
+    // make sure that all tensors defined in the feature sharing list are valid output tensors
+    if (!params.tensorsSharingFeatureLists.isEmpty) {
+      val tensorsGroups = params.tensorsSharingFeatureLists
+      val tensorsInGroups = tensorsGroups.flatten
+      val outputTensorNames = tensors.map(tensor => tensor.outputTensorInfo.name)
+      if (!tensorsInGroups.forall(tensor => outputTensorNames.contains(tensor))) {
+        throw new IllegalArgumentException(
+          s"Invalid output tensor name in --tensors-sharing-feature-lists: " +
+            s"$tensorsGroups. Valid names are $outputTensorNames.")
       }
     }
   }

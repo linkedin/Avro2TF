@@ -11,6 +11,7 @@ object Constants {
   final val BLACKLIST = "blacklist"
   final val COLUMN_NAME = "columnName"
   final val COLUMN_NAME_ALIAS_DELIMITER = ":"
+  final val COUNT = "count"
   final val DEFAULT_TOKENIZER_DELIMITER_REGEX: String = "\\W"
   final val DISABLE_DELETE_SOURCE = false
   final val EMPTY_AVRO_NAME_SPACE = ""
@@ -18,6 +19,7 @@ object Constants {
   final val ENABLE_HDFS_OVERWRITE = true
   final val ENABLE_PRETTY_PRINT_JSON = true
   final val ENABLE_RECURSIVE = true
+  final val FEATURE_ENTRY = "featureEntry"
   final val FEATURE_LIST_DIR_NAME = "featureList"
   final val FILE_NAME_REGEX = "part*"
   final val HASH_INFO = "hashInfo"
@@ -36,7 +38,8 @@ object Constants {
   final val REMOVE_STOP_WORDS = "removeStopWords"
   final val REMOVER_COLUMN_NAME_SUFFIX = "remover"
   final val SCHEMA_FILE_NAME = "schemaOutputFile"
-  final val SPLIT_REGEX = ","
+  final val SEPARATOR_FEATURE_COUNT = ","
+  final val SPLIT_REGEX = s"${SEPARATOR_FEATURE_COUNT}[0-9]+" + "$"
   final val TF_RECORD = "tfrecord"
   final val TMP_FEATURE_LIST = "tmpFeatureList"
   final val TENSOR_METADATA_FILE_NAME = "tensor_metadata.json"

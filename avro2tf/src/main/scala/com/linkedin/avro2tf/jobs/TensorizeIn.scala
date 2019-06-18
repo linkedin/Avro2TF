@@ -98,8 +98,11 @@ object TensorizeIn {
    * Feature list entry represented by a column name and the value of a feature entry
    *
    * @param columnName Name of the column
-   * @param featureEntry Value of a feature entry, e.g. combination of Name + Term or a String
+   * @param featureEntry Value of a feature entry, e.g. combination of Name + Term or a String; or Value of a feature
+   * entry with count of the corresponding (columnName, Value of a feature entry) pair separated by
+   * comma.
    */
   case class FeatureListEntry(columnName: String, featureEntry: String)
+
 }
 
