@@ -9,6 +9,7 @@ ext.deps = [
         "sparkCore": "org.apache.spark:spark-core_2.11:2.3.0",
         "sparkMllib": "org.apache.spark:spark-mllib_2.11:2.3.0",
         "sparkSql": "org.apache.spark:spark-sql_2.11:2.3.0",
+        "tensorflowSparkConnector": "org.tensorflow:spark-tensorflow-connector_2.11:1.13.1",
         "testng": "org.testng:testng:6.4"
     ]
 ]
@@ -27,5 +28,9 @@ dependencies {
     // The avro-mapred in sparkSql defaults to hadoop1 jar so it will cause issues in unit test
     exclude module: 'avro-mapred'
   }
+  compile(deps.external.tensorflowSparkConnector)
   testCompile(deps.external.testng)
+}
+test {
+  useTestNG()
 }
