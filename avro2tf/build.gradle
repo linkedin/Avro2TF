@@ -3,20 +3,23 @@ apply plugin: 'scala'
 ext.deps = [
     external: [
         "avroMapred": "org.apache.avro:avro-mapred:1.7.7:hadoop2",
-        "jacksonDataBindFasterXML": "com.fasterxml.jackson.core:jackson-databind:2.6.7.1",
+        "circe-config": "io.circe:circe-config_2.11:0.6.1",
+        "circe-generic": "io.circe:circe-generic_2.11:0.11.1",
         "scopt": "com.github.scopt:scopt_2.11:3.5.0",
         "sparkAvro": "com.databricks:spark-avro_2.11:4.0.0",
         "sparkCore": "org.apache.spark:spark-core_2.11:2.3.0",
         "sparkMllib": "org.apache.spark:spark-mllib_2.11:2.3.0",
         "sparkSql": "org.apache.spark:spark-sql_2.11:2.3.0",
-        "tensorflowSparkConnector": "org.tensorflow:spark-tensorflow-connector_2.11:1.13.1",
-        "testng": "org.testng:testng:6.4"
+        "testng": "org.testng:testng:6.4",
+        "typesafe-config": "com.typesafe:config:1.3.4",
+        "tensorflowSparkConnector": "org.tensorflow:spark-tensorflow-connector_2.11:1.13.1"
     ]
 ]
 
 dependencies {
   compile(deps.external.avroMapred)
-  compile(deps.external.jacksonDataBindFasterXML)
+  compile(deps.external.'circe-config')
+  compile(deps.external.'circe-generic')
   compile(deps.external.scopt)
   compile(deps.external.sparkAvro)
   compile(deps.external.sparkCore) {
@@ -28,6 +31,8 @@ dependencies {
     // The avro-mapred in sparkSql defaults to hadoop1 jar so it will cause issues in unit test
     exclude module: 'avro-mapred'
   }
+  compile(deps.external.'typesafe-config')
+
   compile(deps.external.tensorflowSparkConnector)
   testCompile(deps.external.testng)
 }

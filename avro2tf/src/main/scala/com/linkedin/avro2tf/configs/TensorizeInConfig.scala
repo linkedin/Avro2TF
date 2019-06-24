@@ -1,5 +1,8 @@
 package com.linkedin.avro2tf.configs
 
+import java.util
+import java.util.Objects
+
 /**
  * Enumeration to represent different data type of tensors
  */
@@ -83,4 +86,19 @@ case class OutputTensorInfo(
 
   // Add an additional DataType format value for case matching
   val dataType: DataType.Value = DataType.withName(dtype)
+
+  // Array is a Java array, so we need to implement equals
+  override def equals(that: Any): Boolean =
+    that match {
+      case that: OutputTensorInfo => {
+        that.canEqual(this) &&
+        this.name == that.name &&
+        this.dtype == that.dtype &&
+        this.shape.exists(s => that.shape.exists(t => s.sameElements(t)))
+      }
+      case _ => false
+    }
+
+  override def hashCode(): Int =
+    Objects.hash(name, dtype) + util.Arrays.hashCode(shape.orNull)
 }

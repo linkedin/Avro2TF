@@ -1,33 +1,91 @@
 package com.linkedin.avro2tf.parsers
 
+
+import cats.data.NonEmptyList
 import com.linkedin.avro2tf.configs.{Feature, InputFeatureInfo, OutputTensorInfo, TensorizeInConfiguration}
-import org.json4s.DefaultFormats
-import org.json4s.jackson.JsonMethods.parse
+import com.typesafe.config.{Config, ConfigFactory}
+import io.circe
+import io.circe.Errors
+import io.circe.generic.auto._
+import io.circe.config.syntax._
+
+import collection.JavaConverters._
+import scala.util.Try
 
 /**
- * Parser file for TensorizeIn configuration
- *
- */
+  * Parser file for TensorizeIn configuration
+  *
+  */
 object TensorizeInConfigParser {
 
   /**
    * Get the TensorizeIn configuration with sanity check
    *
-   * @param jsonString JSON format of TensorizeIn configuration
+   * @param configString HOCON format of TensorizeIn configuration
    * @return TensorizeIn configuration
    */
-  def getTensorizeInConfiguration(jsonString: String): TensorizeInConfiguration = {
+  def getTensorizeInConfiguration(configString: String): TensorizeInConfiguration = {
 
-    // Define implicit JSON4S default format
-    implicit val formats: DefaultFormats.type = DefaultFormats
+    val rawConfig = ConfigFactory.parseString(configString)
+    val featureConfig = rawConfig.getConfigList("features").asScala.map(parseFeature)
+    val labelConfig = Try(rawConfig.getConfigList("labels")).map(_.asScala.map(parseFeature)).toOption
 
-    // Use JSON4S to parse and extract TensorizeIn configuration
-    val config = parse(jsonString).extract[TensorizeInConfiguration]
+    // check that we parsed the features correctly
+    val errorList = NonEmptyList.fromList((featureConfig ++ labelConfig.getOrElse(List()))
+      .filter(_.isLeft).map(_.left.get).toList)
+    errorList.foreach(es => throw Errors(es).fillInStackTrace())
+
+    // since we didn't throw any errors, we know everything is a Right
+    val features = featureConfig.map(_.right.get)
+    val labels = labelConfig.map(_.map(_.right.get))
 
     TensorizeInConfiguration(
-      features = sanityCheck(config.features),
-      labels = Some(sanityCheck(config.labels.getOrElse(Seq.empty)))
+      features = sanityCheck(features),
+      labels = Some(sanityCheck(labels.getOrElse(Seq.empty)))
     )
+  }
+
+  /** Parse the feature configs.
+    *
+    * @param featureConfig - the [[Config]] object for an individual [[Feature]]
+    * @return [[Either]] of a [[circe.Error]] or a [[Feature]]
+    */
+  private def parseFeature(featureConfig: Config): Either[circe.Error, Feature] = {
+    val outputTensorInfo: Either[circe.Error, OutputTensorInfo] =
+      featureConfig.getConfig("outputTensorInfo").as[OutputTensorInfo]
+
+    val inputFeatureInfo = if (featureConfig.hasPath("inputFeatureInfo"))
+      Some(parseInputFeatureInfo(featureConfig.getConfig("inputFeatureInfo")))
+    else None
+
+    outputTensorInfo.fold(e => Left(e), oti => Right(Feature(inputFeatureInfo, oti)))
+  }
+
+  /**
+    *
+    * @param inputFeatureInfoConfig
+    * @return
+    */
+  private def parseInputFeatureInfo(inputFeatureInfoConfig: Config): InputFeatureInfo = {
+    val convertToStringSeqMap = (a: AnyRef) => a.asInstanceOf[java.util.Map[String, java.util.List[String]]]
+    val convertToStringAnyMap = (a: AnyRef) => a.asInstanceOf[java.util.Map[String, Any]].asScala.toMap
+
+    val columnExpr = Try(inputFeatureInfoConfig.getString("columnExpr")).toOption
+    val columnConfig: Option[Map[String, Map[String, Seq[String]]]] = Try(inputFeatureInfoConfig.getConfig("columnConfig"))
+      .map(c =>
+        c.root().unwrapped().asScala.toMap
+          // we need to use map here because mapValues is lazy and this will nee to be serialized for Spark
+          .map { case (k, x) => k -> convertToStringSeqMap(x).asScala.toMap
+          .map { case (j, y) => j -> y.asScala }
+        }
+      ).toOption
+    val transformConfig: Option[Map[String, Map[String, Any]]] = Try(inputFeatureInfoConfig.getConfig("transformConfig"))
+      .map { config =>
+        config.root().unwrapped().asScala.toMap
+          .mapValues(convertToStringAnyMap)
+      }.toOption
+
+    InputFeatureInfo(columnExpr, columnConfig, transformConfig)
   }
 
   /**

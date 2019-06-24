@@ -45,6 +45,7 @@ object ConstantsForTest {
   final val SPARK_SESSION_BUILDER_MASTER = "local[*]"
   final val TENSORIZEIN_CONFIG_PATH_NAME = "--tensorizeIn-config-path"
   final val TENSORIZEIN_CONFIG_PATH_VALUE_2 = "configs/tensorizeIn_config_2.json"
+  final val TENSORIZEIN_CONFIG_PATH_VALUE_2_HOCON = "configs/tensorizein_config_2.conf"
   final val TENSORIZEIN_CONFIG_PATH_VALUE_3 = "configs/tensorizeIn_config_3.json"
   final val TENSORIZEIN_CONFIG_PATH_VALUE_4 = "configs/tensorizeIn_config_4.json"
   final val TENSORIZEIN_CONFIG_PATH_VALUE_5 = "configs/tensorizeIn_config_5.json"

@@ -22,7 +22,7 @@ This will automatically run tests, if want to build without running tests, run:
 ## Usage
 Avro2TF reads raw user input data with any format supported by Spark to generate Avro or TFRecord tensorized training data.
 
-Avro2TF exposes to users a JSON config to specify the tensors that a modeler wants to use in training.
+Avro2TF exposes to users a JSON or HOCON config to specify the tensors that a modeler wants to use in training.
 For each tensor, a user should specify two kinds of information:
 1. What existing features are used to construct the tensor.
 2. The expected name, dtype, and shape of the tensor.
