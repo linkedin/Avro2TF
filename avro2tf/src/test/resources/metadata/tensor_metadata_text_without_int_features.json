@@ -3,17 +3,20 @@
     "name" : "words_term",
     "dtype" : "long",
     "shape" : [ -1 ],
-    "cardinality" : 4
+    "cardinality" : 4,
+    "isSparse" : false
   }, {
     "name" : "words_wideFeatures",
-    "dtype" : "sparseVector",
-    "shape" : [ ],
-    "cardinality" : 100
+    "dtype" : "float",
+    "shape" : [ 100 ],
+    "cardinality" : null,
+    "isSparse" : true
   } ],
   "labels" : [ {
     "name" : "words_wideFeatures_response",
-    "dtype" : "sparseVector",
-    "shape" : [ ],
-    "cardinality" : 100
+    "dtype" : "float",
+    "shape" : [ 100 ],
+    "cardinality" : null,
+    "isSparse" : true
   } ]
 }
