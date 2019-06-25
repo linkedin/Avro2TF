@@ -1,10 +1,14 @@
 package com.linkedin.avro2tf.parsers
 
+import java.io.File
+
 import scala.io.Source
 
 import com.linkedin.avro2tf.configs.TensorizeInConfiguration
 import com.linkedin.avro2tf.utils.Constants._
-import com.linkedin.avro2tf.utils.TrainingMode
+import com.linkedin.avro2tf.utils.{IOUtils, TrainingMode}
+import org.apache.hadoop.fs.{FileSystem, Path}
+import org.apache.hadoop.mapred.JobConf
 
 /**
  * TensorizeIn parsed parameters will be put into this case class for ease of access
@@ -172,9 +176,25 @@ object TensorizeInJobParamsParser {
       .action(
         (tensorizeInConfigPath, tensorizeInParams) => {
 
-          val bufferedSource = Source.fromFile(tensorizeInConfigPath)
-          val jsonInput = bufferedSource.mkString
-          bufferedSource.close()
+          var jsonInput = ""
+
+          // Read JSON config from local if exists, otherwise read from HDFS
+          if (new File(tensorizeInConfigPath).exists()) {
+            val bufferedSource = Source.fromFile(tensorizeInConfigPath)
+            jsonInput = bufferedSource.mkString
+            bufferedSource.close()
+          } else {
+            val fs = FileSystem.get(new JobConf())
+            val path = new Path(tensorizeInConfigPath)
+            if (fs.exists(path)) {
+              jsonInput = IOUtils.readContentFromHDFS(fs, path)
+              fs.close()
+            } else {
+              throw new IllegalArgumentException(
+                s"Specified avro2tf config path: $tensorizeInConfigPath does not exist in either local or HDFS"
+              )
+            }
+          }
 
           // Get the TensorizeIn Configuration
           val tensorizeInConfiguration = TensorizeInConfigParser.getTensorizeInConfiguration(jsonInput)
