@@ -82,7 +82,7 @@ case class InputFeatureInfo(
 case class OutputTensorInfo(
   name: String,
   dtype: String,
-  shape: Option[Array[Int]]) {
+  shape: Option[Seq[Int]]) {
 
   // Add an additional DataType format value for case matching
   val dataType: DataType.Value = DataType.withName(dtype)
@@ -100,5 +100,5 @@ case class OutputTensorInfo(
     }
 
   override def hashCode(): Int =
-    Objects.hash(name, dtype) + util.Arrays.hashCode(shape.orNull)
+    Objects.hash(name, dtype) + shape.orNull.hashCode()
 }

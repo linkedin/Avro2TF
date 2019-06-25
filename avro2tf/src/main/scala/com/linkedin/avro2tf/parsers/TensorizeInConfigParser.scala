@@ -163,7 +163,7 @@ object TensorizeInConfigParser {
 
     feature.outputTensorInfo.shape match {
       case Some(_) => feature
-      case None => Feature(feature.inputFeatureInfo, OutputTensorInfo(feature.outputTensorInfo.name, feature.outputTensorInfo.dtype, Some(Array.empty[Int])))
+      case None => Feature(feature.inputFeatureInfo, OutputTensorInfo(feature.outputTensorInfo.name, feature.outputTensorInfo.dtype, Some(Seq.empty[Int])))
     }
   }
 }

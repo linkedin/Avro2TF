@@ -15,10 +15,12 @@ case class TensorizeInTensorMetadata(features: Seq[TensorMetadata], labels: Seq[
  * @param dtype Data type of a tensor
  * @param shape Shape of a tensor
  * @param cardinality Optional cardinality of a tensor
+ * @param isSparse If it is a sparse tensor
  */
 case class TensorMetadata(
   name: String,
   dtype: String,
-  shape: Array[Int],
-  cardinality: Option[Any]
+  shape: Seq[Int],
+  cardinality: Option[Any],
+  isSparse: Boolean = false
 )

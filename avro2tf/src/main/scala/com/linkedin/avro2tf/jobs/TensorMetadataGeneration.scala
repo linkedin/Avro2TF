@@ -5,12 +5,11 @@ import java.nio.charset.StandardCharsets.UTF_8
 import scala.collection.mutable
 import scala.io.Source
 
-import com.linkedin.avro2tf.configs.{Feature, TensorMetadata, TensorizeInTensorMetadata}
+import com.linkedin.avro2tf.configs.{DataType, Feature, TensorMetadata, TensorizeInTensorMetadata}
 import com.linkedin.avro2tf.helpers.TensorizeInConfigHelper
 import com.linkedin.avro2tf.parsers.TensorizeInParams
 import com.linkedin.avro2tf.utils.Constants._
 import com.linkedin.avro2tf.utils.{IOUtils, JsonUtil}
-
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.functions._
@@ -34,13 +33,23 @@ class TensorMetadataGeneration {
       getColsOfIntOrLongCardinalityMapping(dataFrame, params) ++
       getColsWithHashInfoCardinalityMapping(params)
 
-    val featuresTensorMetadata = generateTensorMetadata(params.tensorizeInConfig.features, colsToFeatureCardinalityMapping)
-    val labelsTensorMetadata = generateTensorMetadata(params.tensorizeInConfig.labels.getOrElse(Seq.empty), colsToFeatureCardinalityMapping)
+    val featuresTensorMetadata = generateTensorMetadata(
+      params.tensorizeInConfig.features,
+      colsToFeatureCardinalityMapping)
+    val labelsTensorMetadata = generateTensorMetadata(
+      params.tensorizeInConfig.labels.getOrElse(Seq.empty),
+      colsToFeatureCardinalityMapping)
 
     // Serialize TensorizeIn Tensor Metadata to JSON String
-    val serializedTensorMetadata = JsonUtil.toJsonString(TensorizeInTensorMetadata(featuresTensorMetadata, labelsTensorMetadata))
+    val serializedTensorMetadata = JsonUtil
+      .toJsonString(TensorizeInTensorMetadata(featuresTensorMetadata, labelsTensorMetadata))
 
-    IOUtils.writeContentToHDFS(fileSystem, new Path(params.workingDir.tensorMetadataPath), serializedTensorMetadata, ENABLE_HDFS_OVERWRITE)
+    IOUtils
+      .writeContentToHDFS(
+        fileSystem,
+        new Path(params.workingDir.tensorMetadataPath),
+        serializedTensorMetadata,
+        ENABLE_HDFS_OVERWRITE)
     fileSystem.close()
   }
 
@@ -51,12 +60,14 @@ class TensorMetadataGeneration {
    * @param fileSystem A file system
    * @return A mapping of column name to its feature cardinality mapping
    */
-  private def getColsWithFeatureListCardinalityMapping(params: TensorizeInParams, fileSystem: FileSystem): Map[String, Any] = {
+  private def getColsWithFeatureListCardinalityMapping(
+    params: TensorizeInParams,
+    fileSystem: FileSystem): Map[String, Long] = {
 
     if (!params.workingDir.featureListPath.isEmpty) {
       // Get list statuses and block locations of the feature list files from the given path
       val featureListFiles = fileSystem.listFiles(new Path(params.workingDir.featureListPath), ENABLE_RECURSIVE)
-      val colsWithFeatureListCardinalityMapping = new mutable.HashMap[String, Any]
+      val colsWithFeatureListCardinalityMapping = new mutable.HashMap[String, Long]
 
       while (featureListFiles.hasNext) {
         // Get the source path of feature list file
@@ -69,7 +80,9 @@ class TensorMetadataGeneration {
       }
 
       colsWithFeatureListCardinalityMapping.toMap
-    } else Map.empty
+    } else {
+      Map.empty
+    }
   }
 
   /**
@@ -78,18 +91,9 @@ class TensorMetadataGeneration {
    * @param params TensorizeIn parameters specified by user
    * @return A mapping of column name to its cardinality
    */
-  private def getColsWithHashInfoCardinalityMapping(params: TensorizeInParams): Map[String, Any] = {
+  private def getColsWithHashInfoCardinalityMapping(params: TensorizeInParams): Map[String, Long] = {
 
-    TensorizeInConfigHelper.concatFeaturesAndLabels(params)
-      .filter(featureOrLabel => featureOrLabel.inputFeatureInfo.get.transformConfig match {
-        case Some(transformConfig) if transformConfig.get(HASH_INFO).isDefined =>
-          transformConfig(HASH_INFO).contains(HASH_INFO_HASH_BUCKET_SIZE)
-        case _ => false
-      })
-      .map(feature => feature.outputTensorInfo.name -> feature.inputFeatureInfo.get
-        .transformConfig
-        .get(HASH_INFO)(HASH_INFO_HASH_BUCKET_SIZE))
-      .toMap
+    TensorizeInConfigHelper.getColsHashInfo(params).map(x => x._1 -> x._2.hashBucketSize.toLong)
   }
 
   /**
@@ -99,11 +103,15 @@ class TensorMetadataGeneration {
    * @param params TensorizeIn parameters specified by user
    * @return A mapping of column name to its cardinality
    */
-  private def getColsOfIntOrLongCardinalityMapping(dataFrame: DataFrame, params: TensorizeInParams): Map[String, Long] = {
+  private def getColsOfIntOrLongCardinalityMapping(
+    dataFrame: DataFrame,
+    params: TensorizeInParams): Map[String, Long] = {
+
     val intOrLongColNames = TensorizeInConfigHelper.concatFeaturesAndLabels(params)
       .map(featureOrLabel => featureOrLabel.outputTensorInfo.name)
-      .filter(columnName => dataFrame.schema(columnName).dataType.isInstanceOf[IntegerType] ||
-        dataFrame.schema(columnName).dataType.isInstanceOf[LongType])
+      .filter(
+        columnName => dataFrame.schema(columnName).dataType.isInstanceOf[IntegerType] ||
+          dataFrame.schema(columnName).dataType.isInstanceOf[LongType])
 
     if (intOrLongColNames.isEmpty) {
       Map.empty
@@ -131,10 +139,29 @@ class TensorMetadataGeneration {
    */
   private def generateTensorMetadata(
     featuresOrLabels: Seq[Feature],
-    colsToFeatureCardinalityMapping: Map[String, Any]): Seq[TensorMetadata] = {
+    colsToFeatureCardinalityMapping: Map[String, Long]): Seq[TensorMetadata] = {
 
-    featuresOrLabels
-      .map(featureOrLabel => TensorMetadata(featureOrLabel.outputTensorInfo.name, featureOrLabel.outputTensorInfo.dtype,
-        featureOrLabel.outputTensorInfo.shape.get, Some(colsToFeatureCardinalityMapping.get(featureOrLabel.outputTensorInfo.name))))
+    featuresOrLabels.map {
+      featureOrLabel =>
+        if (featureOrLabel.outputTensorInfo.dataType == DataType.sparseVector) {
+          val shape = colsToFeatureCardinalityMapping.get(featureOrLabel.outputTensorInfo.name) match {
+            case Some(cardinality) => featureOrLabel.outputTensorInfo.shape.get :+ cardinality.toInt
+            case None => featureOrLabel.outputTensorInfo.shape.get
+          }
+          TensorMetadata(
+            featureOrLabel.outputTensorInfo.name,
+            DataType.float.toString,
+            shape,
+            None,
+            isSparse = true
+          )
+        } else {
+          TensorMetadata(
+            featureOrLabel.outputTensorInfo.name,
+            featureOrLabel.outputTensorInfo.dtype,
+            featureOrLabel.outputTensorInfo.shape.get,
+            colsToFeatureCardinalityMapping.get(featureOrLabel.outputTensorInfo.name))
+        }
+    }
   }
 }
