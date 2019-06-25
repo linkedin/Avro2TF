@@ -185,8 +185,15 @@ object TensorizeInJobParamsParser {
             bufferedSource.close()
           } else {
             val fs = FileSystem.get(new JobConf())
-            jsonInput = IOUtils.readContentFromHDFS(fs, new Path(tensorizeInConfigPath))
-            fs.close()
+            val path = new Path(tensorizeInConfigPath)
+            if (fs.exists(path)) {
+              jsonInput = IOUtils.readContentFromHDFS(fs, path)
+              fs.close()
+            } else {
+              throw new IllegalArgumentException(
+                s"Specified avro2tf config path: $tensorizeInConfigPath does not exist in either local or HDFS"
+              )
+            }
           }
 
           // Get the TensorizeIn Configuration
