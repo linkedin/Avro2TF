@@ -102,5 +102,25 @@ The below table shows all the available configuration names and their detailed e
 | dtype              | yes       | /                                          | The expected dtype of output tensor.                                                                                                                                               |
 | shape              | no        | []                                         | The expected shape of output tensor, examples: []: scalar; sparse vector; [-1] : 1D array of any length; [6]: 1D array with size 6; [2, 3]: matrix with 2 rows and 3 columns.      |
 
+### Avro2TF Job Parameters
+
+```
+  --input-paths                     Required.   A list of comma separated paths for input.
+  --working-dir                     Required.   The path to working directory where the output should be saved.
+  --input-date-range                Optional.   The input date range in the format of yyyymmdd-yyyymmdd.
+  --input-days-range                Optional.   The input days range in the format of startOffest-endOffset.
+  --num-output-files                Optional.   The number of output files with the default set to -1.
+  --min-parts                       Optional.   The minimum number of partitions for input data; if below this threshold, repartition will be triggered.
+  --shuffle                         Optional.   Whether to shuffle the converted training data with the default set to true.
+  --external-feature-list-path      Optional.   The path to user supplied feature mapping files.
+  --tensorizeIn-config-path         Required.   The Avro2TF configuration in JSON format.
+  --execution-mode                  Optional.   Whether to prepare training, validation, or test data.
+  --enable-cache                    Optional.   Whether to cache the intermediate Spark DataFrame result with default set to false.
+  --skip-conversion                 Optional.   Whether to skip the conversion step with default set to false.
+  --output-format                   Optional.   The output format of tensorized data, e.g. Avro or TFRecord.
+  --extra-columns-to-keep           Optional.   A list of comma separated column names to specify extra columns to keep.
+  --tensors-sharing-feature-lists   Optional.   Groups of output tensor names separated by semicolon; tensors in the same group are separated by comma. Tensors within the same group share the same feature list.
+```
+
 ## Avro2TF Examples
 Please take a look at our [Avro2TF Official Tutorial](https://github.com/linkedin/Avro2TF/wiki/Avro2TF-Official-Tutorial)! :)
