@@ -47,7 +47,7 @@ object HashingUtils {
    * @param hashSize The maximum hash size
    * @return The hashed string as an integer index
    */
-  private def md5(stringToHash: String, salt: String, hashSize: Int): Int = {
+  def md5(stringToHash: String, salt: String, hashSize: Int): Int = {
 
     val bytes = MessageDigest.getInstance("MD5").digest((stringToHash + salt).getBytes("UTF-8"))
     val bigInt = new BigInteger(1, bytes)

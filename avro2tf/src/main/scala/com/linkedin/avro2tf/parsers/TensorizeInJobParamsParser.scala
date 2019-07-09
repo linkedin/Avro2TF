@@ -44,7 +44,9 @@ case class TensorizeInParams(
   skipConversion: Boolean,
   outputFormat: String,
   extraColumnsToKeep: Seq[String],
-  tensorsSharingFeatureLists: Array[Array[String]]
+  tensorsSharingFeatureLists: Array[Array[String]],
+  numPartitions: Int,
+  partitionFieldName: String
 )
 
 /**
@@ -293,6 +295,24 @@ object TensorizeInJobParamsParser {
           |Tensors within the same group share the same feature list."""
           .stripMargin
       )
+
+    opt[Int]("num-partitions")
+      .action((numPartitions, tensorizeInParams) => tensorizeInParams.copy(numPartitions = numPartitions))
+      .optional()
+      .text(
+        """Optional.
+          |The number of partitions""".stripMargin
+      )
+
+    opt[String]("partition-field-name")
+      .action(
+        (partitionFieldName, tensorizeInParams) => tensorizeInParams
+          .copy(partitionFieldName = partitionFieldName.trim))
+      .optional()
+      .text(
+        """Optional.
+          |The field name to apply partition.""".stripMargin
+      )
   }
 
   /**
@@ -321,7 +341,9 @@ object TensorizeInJobParamsParser {
         skipConversion = false,
         outputFormat = AVRO_RECORD,
         extraColumnsToKeep = Seq.empty,
-        tensorsSharingFeatureLists = Array[Array[String]]()
+        tensorsSharingFeatureLists = Array[Array[String]](),
+        numPartitions = 100,
+        partitionFieldName = ""
       )
     ) match {
       case Some(params) =>
