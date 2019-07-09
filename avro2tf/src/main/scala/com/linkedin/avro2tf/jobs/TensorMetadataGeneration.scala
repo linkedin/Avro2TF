@@ -9,7 +9,7 @@ import com.linkedin.avro2tf.configs.{DataType, Feature, TensorMetadata, Tensoriz
 import com.linkedin.avro2tf.helpers.TensorizeInConfigHelper
 import com.linkedin.avro2tf.parsers.TensorizeInParams
 import com.linkedin.avro2tf.utils.Constants._
-import com.linkedin.avro2tf.utils.{IOUtils, JsonUtil}
+import com.linkedin.avro2tf.utils.{Constants, IOUtils, JsonUtil}
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.functions._
@@ -33,9 +33,18 @@ class TensorMetadataGeneration {
       getColsOfIntOrLongCardinalityMapping(dataFrame, params) ++
       getColsWithHashInfoCardinalityMapping(params)
 
-    val featuresTensorMetadata = generateTensorMetadata(
+    var featuresTensorMetadata = generateTensorMetadata(
       params.tensorizeInConfig.features,
       colsToFeatureCardinalityMapping)
+    if (params.partitionFieldName.nonEmpty) {
+      featuresTensorMetadata = featuresTensorMetadata :+ TensorMetadata(
+        Constants.PARTITION_ID_FIELD_NAME,
+        DataType.int.toString,
+        Seq(),
+        Some(params.numPartitions)
+      )
+    }
+
     val labelsTensorMetadata = generateTensorMetadata(
       params.tensorizeInConfig.labels.getOrElse(Seq.empty),
       colsToFeatureCardinalityMapping)

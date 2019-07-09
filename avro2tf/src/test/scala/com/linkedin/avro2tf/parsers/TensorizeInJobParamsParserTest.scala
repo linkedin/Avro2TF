@@ -270,7 +270,9 @@ class TensorizeInJobParamsParserTest {
       skipConversion = SKIP_CONVERSION_VALUE.toBoolean,
       outputFormat = AVRO_RECORD.toString,
       extraColumnsToKeep = Seq.empty,
-      tensorsSharingFeatureLists = Array[Array[String]]()
+      tensorsSharingFeatureLists = Array[Array[String]](),
+      numPartitions = 100,
+      partitionFieldName = ""
     )
   }
 

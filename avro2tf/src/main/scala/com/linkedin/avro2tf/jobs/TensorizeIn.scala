@@ -47,9 +47,11 @@ object TensorizeIn {
     if (!params.skipConversion) {
       // Convert String indices to numerical Id indices
       dataFrame = (new FeatureIndicesConversion).run(dataFrame, params)
+      if (params.partitionFieldName.nonEmpty) {
+        dataFrame = PartitionIdGeneration.run(dataFrame, params)
+      }
+      TensorizeInJobHelper.saveDataToHDFS(dataFrame, params)
     }
-
-    TensorizeInJobHelper.saveDataToHDFS(dataFrame, params)
   }
 
   /**

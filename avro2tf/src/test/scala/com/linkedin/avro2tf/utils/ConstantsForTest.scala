@@ -38,6 +38,7 @@ object ConstantsForTest {
   final val NUM_OUTPUT_FILES_NAME = "--num-output-files"
   final val NUM_OUTPUT_FILES_VALUE = "3"
   final val OUTPUT_FORMAT_NAME = "--output-format"
+  final val PARTITION_FIELD_NAME = "--partition-field-name"
   final val SAMPLE_EXTERNAL_FEATURE_LIST = "a\nb\nc\n"
   final val SKIP_CONVERSION_VALUE = "false"
   final val SPARK_DRIVER_BIND_ADDRESS_NAME = "spark.driver.bindAddress"
@@ -77,8 +78,10 @@ object ConstantsForTest {
   final val WORKING_DIRECTORY_INDICES_CONVERSION = "/tmp/indices-conversion-test"
   final val WORKING_DIRECTORY_AVRO2TF = "/tmp/tensorizeIn-test"
   final val WORKING_DIRECTORY_AVRO2TF_MOVIELENS = "/tmp/tensorizeIn-test-movielens"
+  final val WORKING_DIRECTORY_PARTITION_TEST = "/tmp/partition-test"
   final val EXPECTED_FEATURE_LIST_W_COUNTS_PATH = "data/share_feat_list/feat_lists_w_counts"
   final val EXPECTED_TENSOR_METADATA_GENERATED_JSON_PATH_TEXT = "metadata/tensor_metadata_text_1.json"
+  final val EXPECTED_TENSOR_METADATA_WITH_PARTITION_ID = "metadata/tensor_metadata_with_partition_id.json"
   final val EXPECTED_TENSOR_METADATA_WITHOUT_INT_FEATURES_GENERATED_JSON_PATH_TEXT =
     "metadata/tensor_metadata_text_without_int_features.json"
   final val EXTERNAL_FEATURE_LIST_FILE_NAME_MOVIELENS = "genreFeatures_term"

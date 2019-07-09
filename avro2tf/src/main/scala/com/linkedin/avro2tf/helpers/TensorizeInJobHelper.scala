@@ -55,17 +55,28 @@ object TensorizeInJobHelper {
     }
 
     // Get a Spark DataFrame based on whether user specifies the number of output files; if not specify, the number is set to negative
-    val dataFrameRepartitioned =
-      repartitionData(dataFrame, params.numOfOutputFiles, params.enableShuffle)
+    var dataFrameRepartitioned = repartitionData(dataFrame, params.numOfOutputFiles, params.enableShuffle)
+
+    if (params.outputFormat.equals(TF_RECORD)) {
+      dataFrameRepartitioned = prepareTFRecord(dataFrameRepartitioned, params)
+    }
+
+    // Only physically partition training data
+    val partitionOutput = params.executionMode == TrainingMode.training && params.partitionFieldName.nonEmpty
+    println(partitionOutput)
+    val dataFrameWriter = if (partitionOutput) {
+      dataFrameRepartitioned.write.partitionBy(Constants.PARTITION_ID_FIELD_NAME).mode(SaveMode.Overwrite)
+    } else {
+      dataFrameRepartitioned.write.mode(SaveMode.Overwrite)
+    }
 
     // Write data to HDFS
     if (params.outputFormat.equals(TF_RECORD)) {
-      val dataFramePrepared = prepareTFRecord(dataFrameRepartitioned, params)
+
       // SequenceExample record type supports array of array data type to be saved as TFRecord
-      dataFramePrepared.write.mode(SaveMode.Overwrite).format("tfrecords").option("recordType", "SequenceExample")
-        .save(outputPath)
+      dataFrameWriter.format("tfrecords").option("recordType", "SequenceExample").save(outputPath)
     } else {
-      dataFrameRepartitioned.write.mode(SaveMode.Overwrite).avro(outputPath)
+      dataFrameWriter.avro(outputPath)
     }
   }
 
