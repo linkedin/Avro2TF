@@ -11,8 +11,6 @@ import org.apache.spark.sql.functions.{expr, udf}
  */
 object PartitionIdGeneration {
 
-  val globalSalt: String = new scala.util.Random(888777666).alphanumeric.take(16).mkString
-
   /**
    * The main function to append partition id
    *
@@ -38,7 +36,7 @@ object PartitionIdGeneration {
 
     udf {
       id: String => {
-        HashingUtils.md5(id, globalSalt, numPartitions)
+        HashingUtils.md5(id, HashingUtils._globalSalt, numPartitions)
       }
     }
   }
