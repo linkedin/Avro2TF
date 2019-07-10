@@ -35,6 +35,7 @@ object Constants {
   final val NTV_VALUE = "value"
   final val NTV_VALUE_TEXT_FEATURE = 1f
   final val PARTITION_ID_FIELD_NAME = "partitionId"
+  final val PARTITION_COLUMN_NAME = "partition"
   final val REGEXED_COLUMN_NAME_SUFFIX = "regexed"
   final val REMOVE_STOP_WORDS = "removeStopWords"
   final val REMOVER_COLUMN_NAME_SUFFIX = "remover"

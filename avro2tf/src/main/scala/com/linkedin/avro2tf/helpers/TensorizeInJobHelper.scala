@@ -65,7 +65,10 @@ object TensorizeInJobHelper {
     val partitionOutput = params.executionMode == TrainingMode.training && params.partitionFieldName.nonEmpty
     println(partitionOutput)
     val dataFrameWriter = if (partitionOutput) {
-      dataFrameRepartitioned.write.partitionBy(Constants.PARTITION_ID_FIELD_NAME).mode(SaveMode.Overwrite)
+      dataFrameRepartitioned = dataFrameRepartitioned.withColumn(
+        Constants.PARTITION_COLUMN_NAME,
+        dataFrameRepartitioned(Constants.PARTITION_ID_FIELD_NAME))
+      dataFrameRepartitioned.write.partitionBy(Constants.PARTITION_COLUMN_NAME).mode(SaveMode.Overwrite)
     } else {
       dataFrameRepartitioned.write.mode(SaveMode.Overwrite)
     }

@@ -63,6 +63,6 @@ class PartitionIdGenerationTest extends WithLocalSparkSession {
       .filter(_.isDirectory()).map(_.getPath.getName).toSeq
 
     // Check if the the outputs are divided into sub dirs
-    assertTrue(partitionDirs.forall(_.matches(s"${Constants.PARTITION_ID_FIELD_NAME}=[0-9]+")))
+    assertTrue(partitionDirs.forall(_.matches(s"${Constants.PARTITION_COLUMN_NAME}=[0-9]+")))
   }
 }
