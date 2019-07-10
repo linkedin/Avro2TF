@@ -6,3 +6,6 @@ build/
 *.ipr
 *.iws
 out
+.metals/
+.ensime
+.ensime_cache/

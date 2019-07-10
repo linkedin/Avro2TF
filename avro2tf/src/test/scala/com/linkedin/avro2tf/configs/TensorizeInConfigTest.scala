@@ -10,10 +10,9 @@ class TensorizeInConfigTest {
     val array1 = Array(1)
     val array2 = Array(1)
 
-    val first = OutputTensorInfo("foo", "int", Some(array1))
-    val second = OutputTensorInfo("foo", "int", Some(array2))
+    val first = OutputTensorInfo("foo", DataType.int, array1)
+    val second = OutputTensorInfo("foo", DataType.int, array2)
 
-    assertNotEquals(Some(array1), Some(array2))
     assertEquals(first, second)
   }
 }

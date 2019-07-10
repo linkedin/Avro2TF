@@ -1,21 +1,19 @@
 package com.linkedin.avro2tf.parsers
 
-
-import cats.data.NonEmptyList
-import com.linkedin.avro2tf.configs.{Feature, InputFeatureInfo, OutputTensorInfo, TensorizeInConfiguration}
-import com.typesafe.config.{Config, ConfigFactory}
-import io.circe
-import io.circe.Errors
-import io.circe.generic.auto._
-import io.circe.config.syntax._
-
-import collection.JavaConverters._
+import scala.collection.JavaConverters._
 import scala.util.Try
 
+import cats.data.NonEmptyList
+import com.linkedin.avro2tf.configs._
+import com.typesafe.config.ConfigFactory
+import io.circe
+import io.circe.Errors
+import io.circe.config.syntax._
+import io.circe.generic.extras.auto._
+
 /**
-  * Parser file for TensorizeIn configuration
-  *
-  */
+ * Parser file for TensorizeIn configuration
+ */
 object TensorizeInConfigParser {
 
   /**
@@ -25,15 +23,19 @@ object TensorizeInConfigParser {
    * @return TensorizeIn configuration
    */
   def getTensorizeInConfiguration(configString: String): TensorizeInConfiguration = {
+    import com.linkedin.avro2tf.configs.JsonCodecs._
 
     val rawConfig = ConfigFactory.parseString(configString)
-    val featureConfig = rawConfig.getConfigList("features").asScala.map(parseFeature)
-    val labelConfig = Try(rawConfig.getConfigList("labels")).map(_.asScala.map(parseFeature)).toOption
+
+    val featureConfig = rawConfig.getConfigList("features").asScala.map(_.as[Feature])
+    // label field is optional, so wrap it in a Try first
+    val labelConfig = Try(rawConfig.getConfigList("labels")).map(_.asScala.map(_.as[Feature])).toOption
 
     // check that we parsed the features correctly
-    val errorList = NonEmptyList.fromList((featureConfig ++ labelConfig.getOrElse(List()))
-      .filter(_.isLeft).map(_.left.get).toList)
-    errorList.foreach(es => throw Errors(es).fillInStackTrace())
+    val errorList: Option[NonEmptyList[circe.Error]] = NonEmptyList.fromList(
+      (featureConfig ++ labelConfig.getOrElse(List()))
+        .filter(_.isLeft).map(_.left.get).toList)
+    errorList.foreach(es => throw new Exception(es.map(_.getMessage).toList.mkString("\n"), Errors(es)))
 
     // since we didn't throw any errors, we know everything is a Right
     val features = featureConfig.map(_.right.get)
@@ -41,51 +43,8 @@ object TensorizeInConfigParser {
 
     TensorizeInConfiguration(
       features = sanityCheck(features),
-      labels = Some(sanityCheck(labels.getOrElse(Seq.empty)))
+      labels = sanityCheck(labels.getOrElse(Seq.empty))
     )
-  }
-
-  /** Parse the feature configs.
-    *
-    * @param featureConfig - the [[Config]] object for an individual [[Feature]]
-    * @return [[Either]] of a [[circe.Error]] or a [[Feature]]
-    */
-  private def parseFeature(featureConfig: Config): Either[circe.Error, Feature] = {
-    val outputTensorInfo: Either[circe.Error, OutputTensorInfo] =
-      featureConfig.getConfig("outputTensorInfo").as[OutputTensorInfo]
-
-    val inputFeatureInfo = if (featureConfig.hasPath("inputFeatureInfo"))
-      Some(parseInputFeatureInfo(featureConfig.getConfig("inputFeatureInfo")))
-    else None
-
-    outputTensorInfo.fold(e => Left(e), oti => Right(Feature(inputFeatureInfo, oti)))
-  }
-
-  /**
-    *
-    * @param inputFeatureInfoConfig
-    * @return
-    */
-  private def parseInputFeatureInfo(inputFeatureInfoConfig: Config): InputFeatureInfo = {
-    val convertToStringSeqMap = (a: AnyRef) => a.asInstanceOf[java.util.Map[String, java.util.List[String]]]
-    val convertToStringAnyMap = (a: AnyRef) => a.asInstanceOf[java.util.Map[String, Any]].asScala.toMap
-
-    val columnExpr = Try(inputFeatureInfoConfig.getString("columnExpr")).toOption
-    val columnConfig: Option[Map[String, Map[String, Seq[String]]]] = Try(inputFeatureInfoConfig.getConfig("columnConfig"))
-      .map(c =>
-        c.root().unwrapped().asScala.toMap
-          // we need to use map here because mapValues is lazy and this will nee to be serialized for Spark
-          .map { case (k, x) => k -> convertToStringSeqMap(x).asScala.toMap
-          .map { case (j, y) => j -> y.asScala }
-        }
-      ).toOption
-    val transformConfig: Option[Map[String, Map[String, Any]]] = Try(inputFeatureInfoConfig.getConfig("transformConfig"))
-      .map { config =>
-        config.root().unwrapped().asScala.toMap
-          .mapValues(convertToStringAnyMap)
-      }.toOption
-
-    InputFeatureInfo(columnExpr, columnConfig, transformConfig)
   }
 
   /**
@@ -98,7 +57,7 @@ object TensorizeInConfigParser {
 
     val checkedItems = featuresOrLabels.map(featureOrLabel => checkColumnExprAndConfig(featureOrLabel))
 
-    checkedItems.map(checkedItem => checkShape(checkedItem))
+    checkedItems
   }
 
   /**
@@ -110,13 +69,31 @@ object TensorizeInConfigParser {
    */
   private def checkColumnExprAndConfig(feature: Feature): Feature = {
 
-    feature.copy(inputFeatureInfo = feature.inputFeatureInfo match {
-      case Some(inputFeatureInfo) => inputFeatureInfo.columnExpr match {
-        case Some(columnExpr) => checkIfColumnExprAndConfigBothExist(inputFeatureInfo, columnExpr)
-        case None => checkIfColumnExprAndConfigBothNotExist(inputFeatureInfo, feature.outputTensorInfo)
-      }
+    val updatedInputFeatureInfo: Option[InputFeatureInfo] = (feature.inputFeatureInfo match {
+      case Some(inputFeatureInfo) =>
+        inputFeatureInfo.columnExpr.fold(
+          checkIfColumnExprAndConfigBothNotExist(inputFeatureInfo, feature.outputTensorInfo))(
+          checkIfColumnExprAndConfigBothExist(inputFeatureInfo, _))
       case None => Some(InputFeatureInfo(columnExpr = Some(feature.outputTensorInfo.name), None, None))
-    })
+    }).map(normalizeTransform)
+
+    feature.copy(inputFeatureInfo = updatedInputFeatureInfo)
+  }
+
+  /** In the event the transform config specified neither hashInfo nor tokenization,
+   * convert the [[InputFeatureInfo]]'s transform config to None.
+   *
+   * @param inputFeatureInfo - the [[InputFeatureInfo]] of a [[Feature]] in the TensorizeIn configuration
+   * @return the input with transform config normalized
+   */
+  private def normalizeTransform(inputFeatureInfo: InputFeatureInfo): InputFeatureInfo = {
+
+    val updatedTransform = inputFeatureInfo.transformConfig match {
+      case Some(TransformConfig(None, None)) => None
+      case _ => inputFeatureInfo.transformConfig
+    }
+
+    inputFeatureInfo.copy(transformConfig = updatedTransform)
   }
 
   /**
@@ -127,11 +104,14 @@ object TensorizeInConfigParser {
    * @param columnExpr Column expression in input feature information
    * @return Optional input feature information
    */
-  private def checkIfColumnExprAndConfigBothExist(inputFeatureInfo: InputFeatureInfo, columnExpr: String): Option[InputFeatureInfo] = {
+  private def checkIfColumnExprAndConfigBothExist(
+    inputFeatureInfo: InputFeatureInfo,
+    columnExpr: String): Option[InputFeatureInfo] = {
 
     inputFeatureInfo.columnConfig match {
-      case Some(columnConfig) => throw new IllegalArgumentException(s"Column expression $columnExpr and column configuration" +
-        s" $columnConfig should not exist at the same time.")
+      case Some(columnConfig) => throw new IllegalArgumentException(
+        s"Column expression $columnExpr and column configuration" +
+          s" $columnConfig should not exist at the same time.")
       case None => Some(inputFeatureInfo)
     }
   }
@@ -144,26 +124,17 @@ object TensorizeInConfigParser {
    * @param outputTensorInfo Output tensor information
    * @return Optional input feature information
    */
-  private def checkIfColumnExprAndConfigBothNotExist(inputFeatureInfo: InputFeatureInfo, outputTensorInfo: OutputTensorInfo): Option[InputFeatureInfo] = {
+  private def checkIfColumnExprAndConfigBothNotExist(
+    inputFeatureInfo: InputFeatureInfo,
+    outputTensorInfo: OutputTensorInfo): Option[InputFeatureInfo] = {
 
     inputFeatureInfo.columnConfig match {
       case Some(_) => Some(inputFeatureInfo)
-      case None => Some(InputFeatureInfo(columnExpr = Some(outputTensorInfo.name), None, inputFeatureInfo.transformConfig))
-    }
-  }
-
-  /**
-   * Check the shape in output tensor information.
-   * Add default shape value of an empty array of integer if shape does not exist in output tensor information
-   *
-   * @param feature Feature in TensorizeIn configuration
-   * @return Feature in TensorizeIn configuration
-   */
-  private def checkShape(feature: Feature): Feature = {
-
-    feature.outputTensorInfo.shape match {
-      case Some(_) => feature
-      case None => Feature(feature.inputFeatureInfo, OutputTensorInfo(feature.outputTensorInfo.name, feature.outputTensorInfo.dtype, Some(Seq.empty[Int])))
+      case None => Some(
+        InputFeatureInfo(
+          columnExpr = Some(outputTensorInfo.name),
+          None,
+          inputFeatureInfo.transformConfig))
     }
   }
 }

@@ -31,4 +31,13 @@ object TestUtil {
 
     assertEqualsNoOrder(actualColumns.toList.toArray, expectedColumns.toArray)
   }
+
+  /**
+   * Remove the whitespace from a string.
+   *
+   * @param s - the string
+   * @return the string with whitespaces removed
+   */
+  def removeWhiteSpace(s: String): String =
+    s.replaceAll("\\s", "")
 }

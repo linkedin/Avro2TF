@@ -1,6 +1,6 @@
 package com.linkedin.avro2tf.helpers
 
-import com.linkedin.avro2tf.configs.{CombinerType, HashInfo}
+import com.linkedin.avro2tf.configs.{Combiner, HashInfo}
 import com.linkedin.avro2tf.jobs.TensorizeIn
 import com.linkedin.avro2tf.parsers.TensorizeInParams
 import com.linkedin.avro2tf.utils.Constants._
@@ -81,14 +81,14 @@ object HashingTransformer {
               group => {
                 val idValue = group._2.reduce {
                   (a, b) => {
-                    hashInfo.combinerType match {
-                      case CombinerType.SUM | CombinerType.AVG => a.copy(value = a.value + b.value)
-                      case CombinerType.MAX => a.copy(value = scala.math.max(a.value, b.value))
+                    hashInfo.combiner match {
+                      case Combiner.SUM | Combiner.AVG => a.copy(value = a.value + b.value)
+                      case Combiner.MAX => a.copy(value = scala.math.max(a.value, b.value))
                     }
                   }
                 }
 
-                if (hashInfo.combinerType == CombinerType.AVG) {
+                if (hashInfo.combiner == Combiner.AVG) {
                   idValue.copy(value = idValue.value / group._2.size)
                 } else {
                   idValue
@@ -116,7 +116,10 @@ object HashingTransformer {
         if (seqValues == null || seqValues.isEmpty) {
           Seq(hashInfo.hashBucketSize)
         } else {
-          seqValues.flatMap(value => HashingUtils.multiHash(value.toString, hashInfo.numHashFunctions, hashInfo.hashBucketSize))
+          seqValues
+            .flatMap(
+              value => HashingUtils
+                .multiHash(value.toString, hashInfo.numHashFunctions, hashInfo.hashBucketSize))
         }
       }
     }

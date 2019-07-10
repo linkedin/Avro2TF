@@ -1,5 +1,7 @@
 package com.linkedin.avro2tf.utils
 
+import com.linkedin.avro2tf.configs.DataType
+
 /**
  * Constants used by TensorizeIn tests
  *
@@ -59,7 +61,7 @@ object ConstantsForTest {
   final val TENSORIZEIN_CONFIG_TEST_ARRAY = Array.empty[Int]
   final val TENSORIZEIN_CONFIG_TEST_INFO = "testInfo"
   final val TENSORIZEIN_CONFIG_TEST_VALUE = "test_value"
-  final val TENSORIZEIN_CONFIG_TEST_LONG_VALUE = "long"
+  final val TENSORIZEIN_CONFIG_TEST_LONG_VALUE = DataType.long
   final val TENSORS_SHARING_FEATURE_LISTS_NAME = "--tensors-sharing-feature-lists"
   final val TENSORS_SHARING_FEATURE_LISTS_VALUE_CASE_1 = "comments_after,comments_before; " +
     "fruits_day1,fruits_day2,fruits_day3;receive_platform,send_platform"

@@ -5,6 +5,7 @@ ext.deps = [
         "avroMapred": "org.apache.avro:avro-mapred:1.7.7:hadoop2",
         "circe-config": "io.circe:circe-config_2.11:0.6.1",
         "circe-generic": "io.circe:circe-generic_2.11:0.11.1",
+        "circe-generic-extras": "io.circe:circe-generic-extras_2.11:0.11.1",
         "scopt": "com.github.scopt:scopt_2.11:3.5.0",
         "sparkAvro": "com.databricks:spark-avro_2.11:4.0.0",
         "sparkCore": "org.apache.spark:spark-core_2.11:2.3.0",
@@ -20,6 +21,7 @@ dependencies {
   compile(deps.external.avroMapred)
   compile(deps.external.'circe-config')
   compile(deps.external.'circe-generic')
+  compile(deps.external.'circe-generic-extras')
   compile(deps.external.scopt)
   compile(deps.external.sparkAvro)
   compile(deps.external.sparkCore) {

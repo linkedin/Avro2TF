@@ -3,8 +3,7 @@ package com.linkedin.avro2tf.parsers
 import java.io.File
 
 import scala.collection.mutable
-
-import com.linkedin.avro2tf.configs.{Feature, InputFeatureInfo, OutputTensorInfo, TensorizeInConfiguration}
+import com.linkedin.avro2tf.configs._
 import com.linkedin.avro2tf.utils.{Constants, TrainingMode}
 import com.linkedin.avro2tf.utils.ConstantsForTest._
 import org.testng.Assert._
@@ -283,7 +282,7 @@ class TensorizeInJobParamsParserTest {
    */
   private def getExpectedTensorizeInConfig: TensorizeInConfiguration = {
 
-    TensorizeInConfiguration(Seq(getExpectedFeature), Some(Seq(getExpectedLabel)))
+    TensorizeInConfiguration(Seq(getExpectedFeature), Seq(getExpectedLabel))
   }
 
   /**
@@ -298,12 +297,12 @@ class TensorizeInJobParamsParserTest {
         InputFeatureInfo(
           Some(TENSORIZEIN_CONFIG_TEST_VALUE),
           None,
-          Some(Map(TENSORIZEIN_CONFIG_TEST_INFO -> Map(TENSORIZEIN_CONFIG_TEST_INFO -> TENSORIZEIN_CONFIG_TEST_VALUE)))
+          Some(TransformConfig(Some(HashInfo(1)), Some(Tokenization(true))))
         )),
       outputTensorInfo = OutputTensorInfo(
         TENSORIZEIN_CONFIG_TEST_VALUE,
         TENSORIZEIN_CONFIG_TEST_LONG_VALUE,
-        Some(TENSORIZEIN_CONFIG_TEST_ARRAY)
+        TENSORIZEIN_CONFIG_TEST_ARRAY
       )
     )
   }
@@ -325,7 +324,7 @@ class TensorizeInJobParamsParserTest {
       outputTensorInfo = OutputTensorInfo(
         TENSORIZEIN_CONFIG_TEST_VALUE,
         TENSORIZEIN_CONFIG_TEST_LONG_VALUE,
-        None
+        Seq()
       )
     )
   }

@@ -1,5 +1,6 @@
 package com.linkedin.avro2tf.helpers
 
+import com.linkedin.avro2tf.configs.Tokenization
 import com.linkedin.avro2tf.parsers.TensorizeInParams
 import com.linkedin.avro2tf.utils.Constants._
 import org.apache.spark.ml.feature.{RegexTokenizer, StopWordsRemover}
@@ -27,7 +28,7 @@ object TextTokenizationTransformer {
     TensorizeInConfigHelper.concatFeaturesAndLabels(params)
       .foreach(featureOrLabel => {
         featureOrLabel.inputFeatureInfo.get.transformConfig match {
-          case Some(transformConfig) if transformConfig.contains(TOKENIZATION_CONFIG) =>
+          case Some(transformConfig) if transformConfig.tokenization.isDefined =>
             val outputColName = featureOrLabel.outputTensorInfo.name
             val regexedColName = s"$outputColName-$REGEXED_COLUMN_NAME_SUFFIX"
 
@@ -35,7 +36,7 @@ object TextTokenizationTransformer {
             tokenizedDataFrame = regexTokenization(dataFrame, regexedColName, outputColName)
 
             // Tokenize text feature with removing stop words
-            tokenizedDataFrame = tokenizeWithRemoveStopWords(tokenizedDataFrame, transformConfig.get(TOKENIZATION_CONFIG), regexedColName, outputColName)
+            tokenizedDataFrame = tokenizeWithRemoveStopWords(tokenizedDataFrame, transformConfig.tokenization.get, regexedColName, outputColName)
           case _ =>
         }
       })
@@ -54,21 +55,16 @@ object TextTokenizationTransformer {
    */
   private def tokenizeWithRemoveStopWords(
     dataFrame: DataFrame,
-    tokenizationConfigOpt: Option[Map[String, Any]],
+    tokenizationConfig: Tokenization,
     regexedColName: String,
     outputColName: String): DataFrame = {
 
-    var tokenizedDataFrame = dataFrame
-
-    tokenizationConfigOpt match {
-      case Some(tokenizationConfig) if tokenizationConfig.contains(REMOVE_STOP_WORDS) &&
-        tokenizationConfig(REMOVE_STOP_WORDS).asInstanceOf[Boolean] =>
+    val tokenizedDataFrame = if(tokenizationConfig.removeStopWords)
         // Text feature tokenization with information on removing stop words
-        tokenizedDataFrame = removeStopWordsTokenization(tokenizedDataFrame, regexedColName, outputColName)
-      case _ =>
+        removeStopWordsTokenization(dataFrame, regexedColName, outputColName)
+    else
         // Rename the regexed column with the name in output tensor information
-        tokenizedDataFrame = tokenizedDataFrame.withColumn(outputColName, col(regexedColName))
-    }
+        dataFrame.withColumn(outputColName, col(regexedColName))
 
     // Drop the regexed column
     tokenizedDataFrame.drop(regexedColName)

@@ -1,5 +1,7 @@
 package com.linkedin.avro2tf.configs
 
+import com.linkedin.avro2tf.configs.DataType.DataType
+
 /**
  * Case class for the TensorizeIn tensor metadata
  *
@@ -19,8 +21,8 @@ case class TensorizeInTensorMetadata(features: Seq[TensorMetadata], labels: Seq[
  */
 case class TensorMetadata(
   name: String,
-  dtype: String,
+  dtype: DataType,
   shape: Seq[Int],
-  cardinality: Option[Any],
+  cardinality: Option[Long],
   isSparse: Boolean = false
 )

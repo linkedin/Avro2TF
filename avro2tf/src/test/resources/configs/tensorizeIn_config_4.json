@@ -11,8 +11,11 @@
           }
         },
         "transformConfig": {
-          "testInfo": {
-            "testInfo": "test_value"
+          "hashInfo": {
+            "hashBucketSize": 1
+          },
+          "tokenization": {
+            "removeStopWords": true
           }
         }
       },

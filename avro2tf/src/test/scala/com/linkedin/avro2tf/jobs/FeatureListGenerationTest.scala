@@ -84,7 +84,7 @@ class FeatureListGenerationTest extends WithLocalSparkSession {
       .filter(
         feature => {
           feature.inputFeatureInfo.get.transformConfig match {
-            case Some(config) if config.contains(HASH_INFO) => false
+            case Some(config) if config.hashInfo.isDefined => false
             case _ => true
           }
         })

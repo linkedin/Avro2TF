@@ -1,6 +1,5 @@
 package com.linkedin.avro2tf.configs
 
-import java.util
 import java.util.Objects
 
 /**
@@ -14,8 +13,8 @@ object DataType extends Enumeration {
 /**
  * Enumeration to represent combiner options to deal with hash collision
  */
-object CombinerType extends Enumeration {
-  type CombinerType = Value
+object Combiner extends Enumeration {
+  type Combiner = Value
   val SUM, AVG, MAX = Value
 }
 
@@ -23,24 +22,39 @@ object CombinerType extends Enumeration {
  * Case class for hashing info
  *
  * @param hashBucketSize The number of buckets of each hash function
- * @param numHashFunctions The number of hash functions to use
- * @param combinerType Which combiner to use when collision happens
+ * @param numHashFunctions The number of hash functions to use - defaults to 1
+ * @param combiner Which combiner to use when collision happens
  */
 case class HashInfo(
   hashBucketSize: Int,
   numHashFunctions: Int = 1,
-  combinerType: CombinerType.CombinerType = CombinerType.SUM
+  combiner: Combiner.Combiner = Combiner.SUM
 )
+
+/**
+ * Case class for Tokenization config
+ *
+ * @param removeStopWords - whether to remove stop words, defaults to false
+ */
+case class Tokenization(removeStopWords: Boolean = false)
+
+/**
+ * Case class for Transform config.
+ *
+ * @param hashInfo - optional [[HashInfo]] config.
+ * @param tokenization - optional [[Tokenization]] config.
+ */
+case class TransformConfig(hashInfo: Option[HashInfo], tokenization: Option[Tokenization])
 
 /**
  * Case class for TensorizeIn configuration
  *
  * @param features A sequence of features
- * @param labels An optional sequence of labels
+ * @param labels A sequence of labels, which may be empty
  */
 case class TensorizeInConfiguration(
   features: Seq[Feature],
-  labels: Option[Seq[Feature]]
+  labels: Seq[Feature] = Seq()
 ) {
   require(
     features.nonEmpty,
@@ -56,8 +70,16 @@ case class TensorizeInConfiguration(
  */
 case class Feature(
   inputFeatureInfo: Option[InputFeatureInfo],
-  outputTensorInfo: OutputTensorInfo
-)
+  outputTensorInfo: OutputTensorInfo) {
+
+  /** Whether this feature defines a hash transform
+   */
+  def hasHashTransform: Boolean = inputFeatureInfo.exists(_.transformConfig.exists(_.hashInfo.isDefined))
+
+  /** Whether this feature defines a tokenization transform
+   */
+  def hasTokenizationTransform: Boolean = inputFeatureInfo.exists(_.transformConfig.exists(_.tokenization.isDefined))
+}
 
 /**
  * Case class for Input Feature Information in TensorizeIn configuration
@@ -69,36 +91,31 @@ case class Feature(
 case class InputFeatureInfo(
   columnExpr: Option[String],
   columnConfig: Option[Map[String, Map[String, Seq[String]]]],
-  transformConfig: Option[Map[String, Map[String, Any]]]
-)
+  transformConfig: Option[TransformConfig])
 
 /**
  * Case class for Output Tensor Information in TensorizeIn configuration
  *
  * @param name Name of tensor
  * @param dtype Data type of tensor
- * @param shape Optional shape of tensor
+ * @param shape Shape of tensor
  */
 case class OutputTensorInfo(
   name: String,
-  dtype: String,
-  shape: Option[Seq[Int]]) {
-
-  // Add an additional DataType format value for case matching
-  val dataType: DataType.Value = DataType.withName(dtype)
+  dtype: DataType.Value,
+  shape: Seq[Int] = Seq()) {
 
   // Array is a Java array, so we need to implement equals
   override def equals(that: Any): Boolean =
     that match {
-      case that: OutputTensorInfo => {
+      case that: OutputTensorInfo =>
         that.canEqual(this) &&
-        this.name == that.name &&
-        this.dtype == that.dtype &&
-        this.shape.exists(s => that.shape.exists(t => s.sameElements(t)))
-      }
+          this.name == that.name &&
+          this.dtype == that.dtype &&
+          this.shape.sameElements(that.shape)
       case _ => false
     }
 
   override def hashCode(): Int =
-    Objects.hash(name, dtype) + shape.orNull.hashCode()
+    Objects.hash(name, dtype.toString, shape)
 }
