@@ -23,7 +23,7 @@ object PartitionIdGeneration {
     dataFrame
       .withColumn(
         Constants.PARTITION_ID_FIELD_NAME,
-        getPartitionId(params.numPartitions)(expr(params.partitionFieldName)).cast("string"))
+        getPartitionId(params.numPartitions)(expr(params.partitionFieldName).cast("string")))
   }
 
   /**
