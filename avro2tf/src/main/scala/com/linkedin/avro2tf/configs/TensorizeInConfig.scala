@@ -2,6 +2,9 @@ package com.linkedin.avro2tf.configs
 
 import java.util.Objects
 
+import com.fasterxml.jackson.core.`type`.TypeReference
+import com.fasterxml.jackson.module.scala.JsonScalaEnumeration
+
 /**
  * Enumeration to represent different data type of tensors
  */
@@ -10,6 +13,8 @@ object DataType extends Enumeration {
   val sparseVector, string, int, long, double, float, byte = Value
 }
 
+class DataTypeRef extends TypeReference[DataType.type]
+
 /**
  * Enumeration to represent combiner options to deal with hash collision
  */
@@ -17,6 +22,8 @@ object Combiner extends Enumeration {
   type Combiner = Value
   val SUM, AVG, MAX = Value
 }
+
+class CombinerTypeRef extends TypeReference[Combiner.type]
 
 /**
  * Case class for hashing info
@@ -28,7 +35,7 @@ object Combiner extends Enumeration {
 case class HashInfo(
   hashBucketSize: Int,
   numHashFunctions: Int = 1,
-  combiner: Combiner.Combiner = Combiner.SUM
+  @JsonScalaEnumeration(classOf[CombinerTypeRef]) combiner: Combiner.Combiner = Combiner.SUM
 )
 
 /**
@@ -102,7 +109,7 @@ case class InputFeatureInfo(
  */
 case class OutputTensorInfo(
   name: String,
-  dtype: DataType.Value,
+  @JsonScalaEnumeration(classOf[DataTypeRef]) dtype: DataType.DataType,
   shape: Seq[Int] = Seq()) {
 
   // Array is a Java array, so we need to implement equals
