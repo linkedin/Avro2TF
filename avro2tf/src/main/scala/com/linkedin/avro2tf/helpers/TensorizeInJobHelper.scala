@@ -61,9 +61,8 @@ object TensorizeInJobHelper {
       dataFrameRepartitioned = prepareTFRecord(dataFrameRepartitioned, params)
     }
 
-    // Only physically partition training data
-    val partitionOutput = params.executionMode == TrainingMode.training && params.partitionFieldName.nonEmpty
-    println(partitionOutput)
+    val partitionOutput = params.partitionFieldName.nonEmpty &&
+      dataFrameRepartitioned.columns.contains(params.partitionFieldName)
     val dataFrameWriter = if (partitionOutput) {
       dataFrameRepartitioned = dataFrameRepartitioned.withColumn(
         Constants.PARTITION_COLUMN_NAME,
