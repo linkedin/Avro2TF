@@ -3,7 +3,10 @@ package com.linkedin.avro2tf.parsers
 import com.linkedin.avro2tf.utils.TrainingMode
 
 case class PrepRankingDataParams(
-  workingDir: WorkingDirectory,
+  inputDataPath: String,
+  inputMetadataPath: String,
+  outputDataPath: String,
+  outputMetadataPath: String,
   groupId: String,
   groupListMaxSize: Int,
   contentFeatureList: Option[Seq[String]],
@@ -23,12 +26,36 @@ object PrepRankingDataParamsParser {
     "Parsing command line for PrepRankingData job."
   ) {
     // Parse the path to working directory where the output should be saved
-    opt[String]("working-dir")
-      .action((x, p) => p.copy(workingDir = WorkingDirectory(x.trim)))
+    opt[String]("input-data-path")
+      .action((x, p) => p.copy(inputDataPath = x.trim))
       .required()
       .text(
         """Required.
-          |The path to working directory where the output should be saved.""".stripMargin
+          |The input data path.""".stripMargin
+      )
+
+    opt[String]("input-metadata-path")
+      .action((x, p) => p.copy(inputMetadataPath = x.trim))
+      .required()
+      .text(
+        """Required.
+          |The input metadata path.""".stripMargin
+      )
+
+    opt[String]("output-data-path")
+      .action((x, p) => p.copy(outputDataPath = x.trim))
+      .required()
+      .text(
+        """Required.
+          |The output data path.""".stripMargin
+      )
+
+    opt[String]("output-metadata-path")
+      .action((x, p) => p.copy(outputMetadataPath = x.trim))
+      .required()
+      .text(
+        """Required.
+          |The output metadata path.""".stripMargin
       )
 
     opt[String]("group-id")
@@ -159,7 +186,10 @@ object PrepRankingDataParamsParser {
     parser.parse(
       args,
       PrepRankingDataParams(
-        workingDir = null,
+        inputDataPath = "",
+        inputMetadataPath = "",
+        outputDataPath = "",
+        outputMetadataPath = "",
         groupId = "",
         groupListMaxSize = 0,
         contentFeatureList = None,
