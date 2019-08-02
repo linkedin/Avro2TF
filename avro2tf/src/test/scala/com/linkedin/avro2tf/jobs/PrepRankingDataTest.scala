@@ -4,6 +4,7 @@ import java.io.File
 
 import com.linkedin.avro2tf.parsers.{PrepRankingDataParamsParser, TensorizeInJobParamsParser}
 import com.linkedin.avro2tf.utils.ConstantsForTest._
+import com.linkedin.avro2tf.utils.Constants
 import org.testng.annotations.Test
 import com.linkedin.avro2tf.utils.WithLocalSparkSession
 import org.apache.commons.io.FileUtils
@@ -32,8 +33,13 @@ class PrepRankingDataTest extends WithLocalSparkSession {
     assertTrue(new File(tensorizeInTrainingParams.workingDir.tensorMetadataPath).exists())
     assertTrue(new File(tensorizeInTrainingParams.workingDir.featureListPath).exists())
 
+    val dataOutputPath = s"$workingDir/rankingOutput"
+    val metadataOutputPath = s"$workingDir/rankingMetadataOutput"
     val prepRankingParams = Array(
-      "--working-dir", workingDir,
+      "--input-data-path", tensorizeInTrainingParams.workingDir.trainingDataPath,
+      "--input-metadata-path", tensorizeInTrainingParams.workingDir.tensorMetadataPath,
+      "--output-data-path", dataOutputPath,
+      "--output-metadata-path", metadataOutputPath,
       "--group-id", "userId",
       "--query-feature-list", "movieId_hashed",
       "--group-list-max-size", "2",
@@ -43,8 +49,8 @@ class PrepRankingDataTest extends WithLocalSparkSession {
     val params = PrepRankingDataParamsParser.parse(prepRankingParams)
     PrepRankingData.run(session, params)
 
-    assertTrue(new File(s"${params.workingDir.rankingTrainingPath}/_SUCCESS").exists())
-    assertTrue(new File(s"${params.workingDir.rankingTensorMetadataPath}").exists())
-    assertTrue(new File(s"${params.workingDir.rankingContentFeatureList}").exists())
+    assertTrue(new File(s"$dataOutputPath/_SUCCESS").exists())
+    assertTrue(new File(s"$metadataOutputPath/${Constants.TENSOR_METADATA_FILE_NAME}").exists())
+    assertTrue(new File(s"$metadataOutputPath/${Constants.CONTENT_FEATURE_LIST}").exists())
   }
 }

@@ -34,22 +34,15 @@ object PrepRankingData {
   def run(spark: SparkSession, params: PrepRankingDataParams): Unit = {
 
     val fs = FileSystem.get(spark.sparkContext.hadoopConfiguration)
-    val metadata = readMetadata(fs, params.workingDir.tensorMetadataPath)
+    val metadata = readMetadata(fs, params.inputMetadataPath)
 
     require(metadata.contains(Constants.FEATURES), "Cannot find features section in metadata.")
     require(
       metadata.contains(Constants.LABELS) && metadata(Constants.LABELS).size == 1,
       "Cannot find labels section in metadata or length is not equal to 1.")
 
-    val inputPath = params.executionMode match {
-      case TrainingMode.training => params.workingDir.trainingDataPath
-      case TrainingMode.validation => params.workingDir.validationDataPath
-      case TrainingMode.test => params.workingDir.testDataPath
-      case _ => throw new IllegalArgumentException("Unknown training mode!")
-    }
-
-    require(fs.exists(new Path(inputPath)), s"Cannot find $inputPath on hdfs.")
-    prepareRanking(spark, inputPath, params, metadata)
+    require(fs.exists(new Path(params.inputDataPath)), s"Cannot find ${params.inputDataPath} on hdfs.")
+    prepareRanking(spark, params.inputDataPath, params, metadata)
   }
 
   /**
@@ -138,19 +131,14 @@ object PrepRankingData {
     }
 
     // update tensor_metadata.json
-    val outputPath = params.executionMode match {
-      case TrainingMode.training =>
-        updateMetadata(spark, params, contentFeatures, transformDf, metadata)
-        params.workingDir.rankingTrainingPath
-      case TrainingMode.validation => params.workingDir.rankingValidationPath
-      case TrainingMode.test => params.workingDir.rankingTestPath
-      case _ => throw new IllegalArgumentException("Unknown training mode!")
+    if (params.executionMode == TrainingMode.training) {
+      updateMetadata(spark, params, contentFeatures, transformDf, metadata)
     }
 
     // write to disk
     val repartitionDf = TensorizeInJobHelper
       .repartitionData(transformDf, params.numOutputFiles, params.enableShuffle)
-    repartitionDf.write.mode(SaveMode.Overwrite).avro(outputPath)
+    repartitionDf.write.mode(SaveMode.Overwrite).avro(params.outputDataPath)
   }
 
   /**
@@ -186,14 +174,14 @@ object PrepRankingData {
     IOUtils
       .writeContentToHDFS(
         fs,
-        new Path(params.workingDir.rankingTensorMetadataPath),
+        new Path(params.outputMetadataPath, Constants.TENSOR_METADATA_FILE_NAME),
         updateMetadataJson,
         overwrite = true)
 
     // write content feature list
     IOUtils.writeContentToHDFS(
       fs,
-      new Path(params.workingDir.rankingContentFeatureList),
+      new Path(params.outputMetadataPath, Constants.CONTENT_FEATURE_LIST),
       contentFeatures.mkString("\n"),
       overwrite = true
     )

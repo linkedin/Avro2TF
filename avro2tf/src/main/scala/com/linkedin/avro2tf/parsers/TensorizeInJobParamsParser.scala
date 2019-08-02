@@ -61,13 +61,6 @@ case class WorkingDirectory(rootPath: String) {
   val testDataPath = s"$rootPath/$TEST_DATA_DIR_NAME"
   val featureListPath = s"$rootPath/$FEATURE_LIST_DIR_NAME"
   val tensorMetadataPath = s"$rootPath/$METADATA_DIR_NAME/$TENSOR_METADATA_FILE_NAME"
-
-  val rankingDataRoot = s"$rootPath/$RANK_DATA"
-  val rankingTrainingPath = s"$rankingDataRoot/$TRAINING_DATA_DIR_NAME"
-  val rankingValidationPath = s"$rankingDataRoot/$VALIDATION_DATA_DIR_NAME"
-  val rankingTestPath = s"$rankingDataRoot/$TEST_DATA_DIR_NAME"
-  val rankingTensorMetadataPath = s"$rankingDataRoot/$METADATA_DIR_NAME/$TENSOR_METADATA_FILE_NAME"
-  val rankingContentFeatureList = s"$rankingDataRoot/$CONTENT_FEATURE_LIST"
 }
 
 /**
