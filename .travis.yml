@@ -9,3 +9,5 @@ script: "./gradlew check --stacktrace --info"
 branches:
   only:
   - master
+
+dist: trusty

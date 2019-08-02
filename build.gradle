@@ -27,6 +27,8 @@ subprojects {
   apply plugin: 'maven-publish'
   apply plugin: 'java'
 
+  sourceCompatibility = 1.8
+
   task sourcesJar(type: Jar, dependsOn: classes) {
     classifier = 'sources'
     from sourceSets.main.allSource
