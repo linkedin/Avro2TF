@@ -211,7 +211,7 @@ class FeatureListGeneration {
    */
   private def writeFeatureEntriesWCountToDisk(
     p: Path,
-    featureEntriesWCount: Seq[(String, Int)],
+    featureEntriesWCount: Seq[(String, Long)],
     prefix: Option[String],
     fileSystem: FileSystem): Unit = {
 
@@ -278,7 +278,7 @@ class FeatureListGeneration {
     tensorGroups.foreach( // each element is an array containing the output tensor names sharing one feature list
       tensors => {
         // for the current group of tensors sharing one feature list, accumulate feature entry count in a hashmap
-        val featureEntriesWCount = new mutable.HashMap[String, Int]().withDefaultValue(0)
+        val featureEntriesWCount = new mutable.HashMap[String, Long]().withDefaultValue(0L)
         // get a list of tensors where a prefix needs to be removed when accumulating feature entry count and added back
         // when writing the feature entries out. These are ntv tensors with feature sharing setting
         val tensorsWithPrefix = new mutable.HashMap[String, String]()
@@ -319,7 +319,7 @@ class FeatureListGeneration {
                     else {
                       lineWithoutCount
                     }
-                    val count = line.split(SEPARATOR_FEATURE_COUNT).last.toInt
+                    val count = line.split(SEPARATOR_FEATURE_COUNT).last.toLong
                     featureEntriesWCount(featureEntry) += count
                   })
               fileInputStream.close()
