@@ -130,15 +130,15 @@ object PrepRankingData {
       transformDf = transformDf.withColumn(it, flattenSparseVectorArray(col(it)))
     }
 
-    // update tensor_metadata.json
-    if (params.executionMode == TrainingMode.training) {
-      updateMetadata(spark, params, contentFeatures, transformDf, metadata)
-    }
-
     // write to disk
     val repartitionDf = TensorizeInJobHelper
       .repartitionData(transformDf, params.numOutputFiles, params.enableShuffle)
     repartitionDf.write.mode(SaveMode.Overwrite).avro(params.outputDataPath)
+
+    // update tensor_metadata.json, need to happen after above avro data write
+    if (params.executionMode == TrainingMode.training) {
+      updateMetadata(spark, params, contentFeatures, transformDf, metadata)
+    }
   }
 
   /**
