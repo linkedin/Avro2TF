@@ -9,10 +9,9 @@ import com.databricks.spark.avro._
 import com.linkedin.avro2tf.parsers.TensorizeInJobParamsParser
 import com.linkedin.avro2tf.utils.Constants.{HASH_INFO, NTV_NAME, NTV_TERM, NTV_VALUE, TMP_FEATURE_LIST}
 import com.linkedin.avro2tf.utils.ConstantsForTest._
-import com.linkedin.avro2tf.utils.WithLocalSparkSession
-
+import com.linkedin.avro2tf.utils.{Constants, WithLocalSparkSession}
 import org.apache.commons.io.FileUtils
-import org.apache.hadoop.fs.{FileSystem, Path, FileStatus}
+import org.apache.hadoop.fs.{FileStatus, FileSystem, Path}
 import org.apache.spark.sql.types.{ArrayType, StringType, StructType}
 import org.testng.Assert._
 import org.testng.annotations.{DataProvider, Test}
@@ -323,5 +322,55 @@ class FeatureListGenerationTest extends WithLocalSparkSession {
 
     val dataFrameExtracted = (new FeatureExtraction).run(dataFrame, tensorizeInParams)
     (new FeatureListGeneration).run(dataFrameExtracted, tensorizeInParams)
+  }
+
+  /**
+   * Test the correctness of term only feature list generation
+   *
+   */
+  @Test
+  def testTermOnlyFeatureList(): Unit = {
+
+    val tensorizeInConfig = new File(
+      getClass.getClassLoader.getResource(TENSORIZEIN_CONFIG_PATH_VALUE_SHARE_FEATURE).getFile
+    ).getAbsolutePath
+    FileUtils.deleteDirectory(new File(WORKING_DIRECTORY_FEATURE_LIST_GENERATION_TEXT))
+
+    val params = Array(
+      INPUT_PATHS_NAME, INPUT_SHARE_FEATURE_PATH,
+      WORKING_DIRECTORY_NAME, WORKING_DIRECTORY_FEATURE_LIST_GENERATION_TEXT,
+      TENSORIZEIN_CONFIG_PATH_NAME, tensorizeInConfig,
+      TERM_ONLY_FEATURE_LIST_NAME, "true"
+    )
+
+    val dataFrame = session.read.avro(INPUT_SHARE_FEATURE_PATH)
+    val tensorizeInParams = TensorizeInJobParamsParser.parse(params)
+
+    val dataFrameExtracted = (new FeatureExtraction).run(dataFrame, tensorizeInParams)
+    (new FeatureListGeneration).run(dataFrameExtracted, tensorizeInParams)
+
+    // get actual generated feature list
+    val fileSystem = FileSystem.get(session.sparkContext.hadoopConfiguration)
+    val featureListPath = new Path(tensorizeInParams.workingDir.featureListPath)
+    val featureLists = fileSystem.listStatus(featureListPath).map(_.getPath.getName)
+    val termOnlyFeatureListPath = new Path(tensorizeInParams.workingDir.termOnlyFeatureListPath)
+    val termOnlyFeatureLists = fileSystem.listStatus(termOnlyFeatureListPath).map(_.getPath.getName)
+    assertEquals(featureLists.toSet, termOnlyFeatureLists.toSet)
+
+    val termFileStream = fileSystem
+      .open(new Path(tensorizeInParams.workingDir.termOnlyFeatureListPath, MIX_NTV_FEATURE_NAME))
+    val terms = scala.io.Source.fromInputStream(termFileStream, UTF_8.name()).getLines().toSeq
+    val nameTermFileStream = fileSystem
+      .open(new Path(tensorizeInParams.workingDir.featureListPath, MIX_NTV_FEATURE_NAME))
+    val nameTerms = scala.io.Source.fromInputStream(nameTermFileStream, UTF_8.name()).getLines().toSeq
+    val termCounts = new mutable.HashMap[String, Long]().withDefaultValue(0L)
+    nameTerms.foreach {
+      line =>
+        termCounts(line.split(Constants.SEPARATOR_NAME_TERM).last) += 1
+    }
+    val expectedTerms = termCounts.toSeq.sortBy { case (k, v) => (-v, k) }.map(_._1)
+    assertEquals(terms, expectedTerms)
+
+    fileSystem.close()
   }
 }
