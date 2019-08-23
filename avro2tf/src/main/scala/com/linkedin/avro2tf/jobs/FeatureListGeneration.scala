@@ -58,7 +58,9 @@ class FeatureListGeneration {
     collectAndSaveFeatureList(dataFrame, params, fileSystem, colsToCollectFeatureList)
     val ntvTensors = getNtvTensors(dataFrame, colsToCollectFeatureList)
     writeFeatureList(params, fileSystem, ntvTensors)
-
+    if (params.termOnlyFeatureList) {
+      writeTermOnlyFeatureList(params, fileSystem, ntvTensors, colsToCollectFeatureList)
+    }
     fileSystem.close()
   }
 
@@ -300,7 +302,7 @@ class FeatureListGeneration {
                     // sure prefix is unique
                     val lineWithoutCount = line.split(SPLIT_REGEX).head
                     val featureEntry = if (needProcessPrefix) {
-                      val prefixSplit = lineWithoutCount.split(',')
+                      val prefixSplit = lineWithoutCount.split(SEPARATOR_NAME_TERM)
                       val prefixCurrentLine = prefixSplit.head
                       if (prefix.isEmpty) {
                         prefix += prefixCurrentLine
@@ -343,5 +345,50 @@ class FeatureListGeneration {
         )
       }
     )
+  }
+
+  /**
+   * Write term only feature list as text file to HDFS, will count the frequency of terms and output the sorted one
+   *
+   * @param params TensorizeIn parameters specified by user
+   * @param fileSystem A file system
+   * @param ntvTensors A set of NTV tensor names
+   * @param colsToCollectFeatureList The list of tensors that need to collect feature list
+   */
+  private def writeTermOnlyFeatureList(
+    params: TensorizeInParams,
+    fileSystem: FileSystem,
+    ntvTensors: Set[String],
+    colsToCollectFeatureList: Seq[String]): Unit = {
+
+    val tmpFeatureListDir = s"${params.workingDir.rootPath}/$TMP_FEATURE_LIST"
+    colsToCollectFeatureList.foreach { tensorName =>
+      val featureListDirForCurrentTensor = new Path(s"$tmpFeatureListDir/$COLUMN_NAME=$tensorName")
+      val filesIterator = fileSystem.listFiles(featureListDirForCurrentTensor, ENABLE_RECURSIVE)
+      val featureEntriesWCount = new mutable.HashMap[String, Long]().withDefaultValue(0L)
+      val isNTVFeatureList = ntvTensors.contains(tensorName)
+      while (filesIterator.hasNext) {
+        val featureListFile = filesIterator.next().getPath
+        val fileInputStream = fileSystem.open(featureListFile)
+        scala.io.Source.fromInputStream(fileInputStream, UTF_8.name()).getLines().foreach {
+          line => {
+            val lineWithoutCount = line.split(SPLIT_REGEX).head
+            val count = line.split(SEPARATOR_FEATURE_COUNT).last.toLong
+            if (isNTVFeatureList) {
+              val nameAndTerm = lineWithoutCount.split(SEPARATOR_NAME_TERM)
+              require(nameAndTerm.size == 2, s"Extra $SEPARATOR_NAME_TERM found in name-term string: $lineWithoutCount")
+              featureEntriesWCount(nameAndTerm.last) += count
+            } else {
+              featureEntriesWCount(lineWithoutCount) += count
+            }
+          }
+        }
+      }
+
+      // sort the feature list by count and then by feature entry (alphabetically)
+      val featureList = featureEntriesWCount.toSeq.sortBy { case (k, v) => (-v, k) }
+      val outputPath = new Path(s"${params.workingDir.termOnlyFeatureListPath}/$tensorName")
+      writeFeatureEntriesWCountToDisk(outputPath, featureList, None, fileSystem)
+    }
   }
 }

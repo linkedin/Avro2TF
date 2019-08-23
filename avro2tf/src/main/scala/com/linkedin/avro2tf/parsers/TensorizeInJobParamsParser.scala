@@ -46,7 +46,8 @@ case class TensorizeInParams(
   extraColumnsToKeep: Seq[String],
   tensorsSharingFeatureLists: Array[Array[String]],
   numPartitions: Int,
-  partitionFieldName: String
+  partitionFieldName: String,
+  termOnlyFeatureList: Boolean
 )
 
 /**
@@ -60,6 +61,7 @@ case class WorkingDirectory(rootPath: String) {
   val validationDataPath = s"$rootPath/$VALIDATION_DATA_DIR_NAME"
   val testDataPath = s"$rootPath/$TEST_DATA_DIR_NAME"
   val featureListPath = s"$rootPath/$FEATURE_LIST_DIR_NAME"
+  val termOnlyFeatureListPath = s"$rootPath/$TERM_ONLY_FEATURE_LIST_DIR_NAME"
   val tensorMetadataPath = s"$rootPath/$METADATA_DIR_NAME/$TENSOR_METADATA_FILE_NAME"
 }
 
@@ -305,6 +307,14 @@ object TensorizeInJobParamsParser {
         """Optional.
           |The field name to apply partition.""".stripMargin
       )
+
+    opt[Boolean]("enable-term-only-feature-list")
+      .action((termOnlyFeatureList, tensorizeInParams) => tensorizeInParams.copy(termOnlyFeatureList = termOnlyFeatureList))
+      .optional()
+      .text(
+        """Optional.
+          |Whether to output term only feature list""".stripMargin
+      )
   }
 
   /**
@@ -335,7 +345,8 @@ object TensorizeInJobParamsParser {
         extraColumnsToKeep = Seq.empty,
         tensorsSharingFeatureLists = Array[Array[String]](),
         numPartitions = 100,
-        partitionFieldName = ""
+        partitionFieldName = "",
+        termOnlyFeatureList = false
       )
     ) match {
       case Some(params) =>

@@ -37,6 +37,7 @@ object ConstantsForTest {
   final val INPUT_SHARE_FEATURE_PATH = "src/test/resources/data/share_feat_list/test_share_feature_list.avro"
   final val MIN_PARTS_NAME = "--min-parts"
   final val MIN_PARTS_VALUE = "100"
+  final val MIX_NTV_FEATURE_NAME = "fruits_day4"
   final val NUM_OUTPUT_FILES_NAME = "--num-output-files"
   final val NUM_OUTPUT_FILES_VALUE = "3"
   final val OUTPUT_FORMAT_NAME = "--output-format"
@@ -69,6 +70,7 @@ object ConstantsForTest {
     "fruits_day1,fruits_day2;receive_platform,send_platform"
   final val TENSORS_SHARING_FEATURE_LISTS_VALUE_CASE_3 = "comments_after,comments_before; " +
     "fruits_day1,fruits_day4;receive_platform,send_platform"
+  final val TERM_ONLY_FEATURE_LIST_NAME = "--enable-term-only-feature-list"
   final val TF_RECORD = "tfrecord"
   final val WORKING_DIRECTORY_NAME = "--working-dir"
   final val WORKING_DIRECTORY_VALUE = "/output/456"
