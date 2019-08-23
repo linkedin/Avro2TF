@@ -40,7 +40,7 @@ class PrepRankingDataTest extends WithLocalSparkSession {
       "--input-metadata-path", tensorizeInTrainingParams.workingDir.tensorMetadataPath,
       "--output-data-path", dataOutputPath,
       "--output-metadata-path", metadataOutputPath,
-      "--group-id", "userId",
+      "--group-id-list", "userId",
       "--query-feature-list", "movieId_hashed",
       "--group-list-max-size", "2",
       "--execution-mode", "training",

@@ -7,7 +7,7 @@ case class PrepRankingDataParams(
   inputMetadataPath: String,
   outputDataPath: String,
   outputMetadataPath: String,
-  groupId: String,
+  groupIdList: Seq[String],
   groupListMaxSize: Int,
   contentFeatureList: Option[Seq[String]],
   queryFeatureList: Option[Seq[String]],
@@ -58,12 +58,13 @@ object PrepRankingDataParamsParser {
           |The output metadata path.""".stripMargin
       )
 
-    opt[String]("group-id")
-      .action((x, p) => p.copy(groupId = x.trim))
+    opt[String]("group-id-list")
+      .action((x, p) => p.copy(groupIdList = x.split(",").map(_.trim)))
       .required()
       .text(
         """Required.
-          |The group id string expression.
+          |The group id string expression. Supported composite key grouping by separated by comma.
+          |For example: groupId1,groupId2
         """.stripMargin)
 
     opt[Int]("group-list-max-size")
@@ -190,7 +191,7 @@ object PrepRankingDataParamsParser {
         inputMetadataPath = "",
         outputDataPath = "",
         outputMetadataPath = "",
-        groupId = "",
+        groupIdList = Seq.empty,
         groupListMaxSize = 0,
         contentFeatureList = None,
         queryFeatureList = None
