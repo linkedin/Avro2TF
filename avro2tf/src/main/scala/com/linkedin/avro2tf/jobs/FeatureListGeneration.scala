@@ -352,6 +352,8 @@ class FeatureListGeneration {
    *
    * @param params TensorizeIn parameters specified by user
    * @param fileSystem A file system
+   * @param ntvTensors A set of NTV tensor names
+   * @param colsToCollectFeatureList The list of tensors that need to collect feature list
    */
   private def writeTermOnlyFeatureList(
     params: TensorizeInParams,

@@ -70,7 +70,7 @@ object ConstantsForTest {
     "fruits_day1,fruits_day2;receive_platform,send_platform"
   final val TENSORS_SHARING_FEATURE_LISTS_VALUE_CASE_3 = "comments_after,comments_before; " +
     "fruits_day1,fruits_day4;receive_platform,send_platform"
-  final val TERM_ONLY_FEATURE_LIST_NAME = "--term-only-feature-list"
+  final val TERM_ONLY_FEATURE_LIST_NAME = "--enable-term-only-feature-list"
   final val TF_RECORD = "tfrecord"
   final val WORKING_DIRECTORY_NAME = "--working-dir"
   final val WORKING_DIRECTORY_VALUE = "/output/456"

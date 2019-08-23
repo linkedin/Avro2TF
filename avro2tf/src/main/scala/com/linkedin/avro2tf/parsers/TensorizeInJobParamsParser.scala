@@ -308,7 +308,7 @@ object TensorizeInJobParamsParser {
           |The field name to apply partition.""".stripMargin
       )
 
-    opt[Boolean]("term-only-feature-list")
+    opt[Boolean]("enable-term-only-feature-list")
       .action((termOnlyFeatureList, tensorizeInParams) => tensorizeInParams.copy(termOnlyFeatureList = termOnlyFeatureList))
       .optional()
       .text(
