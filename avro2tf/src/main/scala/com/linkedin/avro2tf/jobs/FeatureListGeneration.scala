@@ -19,7 +19,7 @@ import org.apache.spark.sql.{DataFrame, Row}
  * The Feature List Generation job generates feature list that will be later used in training with tensors.
  *
  */
-class FeatureListGeneration {
+object FeatureListGeneration {
 
   /**
    * The main function to perform Feature List Generation job

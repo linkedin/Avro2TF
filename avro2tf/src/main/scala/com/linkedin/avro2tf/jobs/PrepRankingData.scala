@@ -127,7 +127,7 @@ object PrepRankingData {
     // flatten indices of sparse tensors
     val contentFeaturesWithSpVec = contentFeatures.filter(
       it =>
-        CommonUtils.isArrayOfSparseTensor(truncateDf.schema(it).dataType))
+        CommonUtils.isArrayOfSparseVector(truncateDf.schema(it).dataType))
 
     contentFeaturesWithSpVec.foreach { it =>
       truncateDf = truncateDf.withColumn(it, flattenSparseVectorArray(col(it)))

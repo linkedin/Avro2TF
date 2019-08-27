@@ -59,10 +59,10 @@ class TensorMetadataGenerationTest extends WithLocalSparkSession {
     val dataFrame = session.read.avro(INPUT_TEXT_FILE_PATHS)
     val tensorizeInParams = TensorizeInJobParamsParser.parse(params)
 
-    val dataFrameExtracted = (new FeatureExtraction).run(dataFrame, tensorizeInParams)
-    val dataFrameTransformed = (new FeatureTransformation).run(dataFrameExtracted, tensorizeInParams)
-    (new FeatureListGeneration).run(dataFrameTransformed, tensorizeInParams)
-    (new TensorMetadataGeneration).run(dataFrameTransformed, tensorizeInParams)
+    val dataFrameExtracted = FeatureExtraction.run(dataFrame, tensorizeInParams)
+    val dataFrameTransformed = FeatureTransformation.run(dataFrameExtracted, tensorizeInParams)
+    FeatureListGeneration.run(dataFrameTransformed, tensorizeInParams)
+    TensorMetadataGeneration.run(dataFrameTransformed, tensorizeInParams)
 
     // Check if tensor metadata JSON file is correctly generated
     val expectedTensorMetadata = getClass.getClassLoader.getResource(expectedTensorMetadataPath).getFile

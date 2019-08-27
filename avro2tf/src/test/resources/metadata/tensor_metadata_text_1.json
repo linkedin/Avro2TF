@@ -24,7 +24,19 @@
     "cardinality" : 4,
     "isSparse" : false
   }, {
-    "name" : "words_wideFeatures",
+    "name" : "words_wideFeatures_sparse",
+    "dtype" : "float",
+    "shape" : [ 398 ],
+    "cardinality" : null,
+    "isSparse" : true
+  }, {
+    "name" : "words_wideFeatures_dense",
+    "dtype" : "float",
+    "shape" : [ 398 ],
+    "cardinality" : null,
+    "isSparse" : false
+  }, {
+    "name" : "words_wideFeatures_hash",
     "dtype" : "float",
     "shape" : [ 100 ],
     "cardinality" : null,

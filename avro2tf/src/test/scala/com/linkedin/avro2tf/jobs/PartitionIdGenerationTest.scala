@@ -38,11 +38,11 @@ class PartitionIdGenerationTest extends WithLocalSparkSession {
     val dataFrame = session.read.avro(INPUT_SHARE_FEATURE_PATH)
     val tensorizeInParams = TensorizeInJobParamsParser.parse(params)
 
-    val dataFrameExtracted = (new FeatureExtraction).run(dataFrame, tensorizeInParams)
-    val dataFrameTransformed = (new FeatureTransformation).run(dataFrameExtracted, tensorizeInParams)
-    (new FeatureListGeneration).run(dataFrameTransformed, tensorizeInParams)
-    (new TensorMetadataGeneration).run(dataFrameTransformed, tensorizeInParams)
-    val convertedDataFrame = (new FeatureIndicesConversion).run(dataFrameTransformed, tensorizeInParams)
+    val dataFrameExtracted = FeatureExtraction.run(dataFrame, tensorizeInParams)
+    val dataFrameTransformed = FeatureTransformation.run(dataFrameExtracted, tensorizeInParams)
+    FeatureListGeneration.run(dataFrameTransformed, tensorizeInParams)
+    TensorMetadataGeneration.run(dataFrameTransformed, tensorizeInParams)
+    val convertedDataFrame = FeatureIndicesConversion.run(dataFrameTransformed, tensorizeInParams)
     val dataFrameWithPartitionId = PartitionIdGeneration.run(convertedDataFrame, tensorizeInParams)
 
     // Check if the partition id is in final DataFrame

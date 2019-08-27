@@ -13,7 +13,7 @@ import org.apache.spark.sql.{Column, DataFrame, Row}
  * The Feature Extraction job extracts features and labels that will be converted to tensors and later used in training.
  *
  */
-class FeatureExtraction {
+object FeatureExtraction {
 
   /**
    * The main function to perform Feature Extraction job

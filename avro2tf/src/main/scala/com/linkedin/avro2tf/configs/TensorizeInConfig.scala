@@ -10,7 +10,7 @@ import com.fasterxml.jackson.module.scala.JsonScalaEnumeration
  */
 object DataType extends Enumeration {
   type DataType = Value
-  val sparseVector, string, int, long, double, float, byte = Value
+  val string, int, long, double, float, byte = Value
 }
 
 class DataTypeRef extends TypeReference[DataType.type]
@@ -110,7 +110,8 @@ case class InputFeatureInfo(
 case class OutputTensorInfo(
   name: String,
   @JsonScalaEnumeration(classOf[DataTypeRef]) dtype: DataType.DataType,
-  shape: Seq[Int] = Seq()) {
+  shape: Seq[Int] = Seq(),
+  isSparse: Boolean = false) {
 
   // Array is a Java array, so we need to implement equals
   override def equals(that: Any): Boolean =

@@ -27,13 +27,18 @@ object HashingTransformer {
   def hashTransform(dataFrame: DataFrame, params: TensorizeInParams): DataFrame = {
 
     val colsHashInfo = TensorizeInConfigHelper.getColsHashInfo(params)
+    val outputTensorSparsity = TensorizeInConfigHelper.getOutputTensorSparsity(params)
 
     val hashedColumns = colsHashInfo.map {
       case (columnName, hashInfo) =>
         val dataType = dataFrame.schema(columnName).dataType
 
         val hashedColumn = if (CommonUtils.isArrayOfNTV(dataType)) {
-          hashArrayOfNTVColumn(hashInfo)(dataFrame(columnName))
+          if (outputTensorSparsity(columnName)) {
+            hashArrayOfNTVToSparseVector(hashInfo)(dataFrame(columnName))
+          } else {
+            hashArrayOfNTVToDenseVector(hashInfo)(dataFrame(columnName))
+          }
         } else if (CommonUtils.isArrayOfString(dataType) || CommonUtils.isArrayOfNumericalType(dataType)) {
           hashArrayOfPrimitiveColumn(hashInfo)(dataFrame(columnName))
         } else if (dataType.isInstanceOf[NumericType] || dataType.isInstanceOf[StringType]) {
@@ -53,53 +58,79 @@ object HashingTransformer {
   }
 
   /**
-   * Construct a Spark UDF to perform hashing on an array of NTV
+   * Construct a Spark UDF to hash an array of NTV to sparse vector
    *
    * @param hashInfo Hashing info specified by user
    * @return A spark UDF
    */
-  private def hashArrayOfNTVColumn(hashInfo: HashInfo): UserDefinedFunction = {
+  private def hashArrayOfNTVToSparseVector(hashInfo: HashInfo): UserDefinedFunction = {
 
     udf {
       ntvs: Seq[Row] => {
-        val idValues = if (ntvs == null || ntvs.isEmpty) {
+        val idValues = hashNTVToIdValues(ntvs, hashInfo)
+        TensorizeIn.SparseVector(idValues.map(_.id), idValues.map(_.value))
+      }
+    }
+  }
 
-          // if bag is empty put a dummy one with id as the unknown Id (last id), in hashing case, the num of hash buckets
-          Seq(TensorizeIn.IdValue(hashInfo.hashBucketSize, 0))
-        } else {
-          {
-            ntvs.flatMap {
-              ntv => {
-                val name = ntv.getAs[String](NTV_NAME)
-                val term = ntv.getAs[String](NTV_TERM)
-                val value = ntv.getAs[Float](NTV_VALUE)
+  /**
+   * Construct a Spark UDF to hash an array of NTV to dense vector
+   *
+   * @param hashInfo Hashing info specified by user
+   * @return A spark UDF
+   */
+  private def hashArrayOfNTVToDenseVector(hashInfo: HashInfo): UserDefinedFunction = {
 
-                HashingUtils.multiHash(s"$name,$term", hashInfo.numHashFunctions, hashInfo.hashBucketSize)
-                  .map(id => TensorizeIn.IdValue(id, value))
-              }
-            }.groupBy(_.id).map {
-              group => {
-                val idValue = group._2.reduce {
-                  (a, b) => {
-                    hashInfo.combiner match {
-                      case Combiner.SUM | Combiner.AVG => a.copy(value = a.value + b.value)
-                      case Combiner.MAX => a.copy(value = scala.math.max(a.value, b.value))
-                    }
-                  }
-                }
+    udf {
+      ntvs: Seq[Row] => {
+        val idValues = hashNTVToIdValues(ntvs, hashInfo)
+        CommonUtils.idValuesToDense(idValues, hashInfo.hashBucketSize)
+      }
+    }
+  }
 
-                if (hashInfo.combiner == Combiner.AVG) {
-                  idValue.copy(value = idValue.value / group._2.size)
-                } else {
-                  idValue
+  /**
+   *
+   * @param ntvs A seq of NTV in Row type
+   * @param hashInfo Hashing info specified by user
+   * @return A seq of IdValue
+   */
+  private def hashNTVToIdValues(ntvs: Seq[Row], hashInfo: HashInfo): Seq[TensorizeIn.IdValue] = {
+
+    if (ntvs == null || ntvs.isEmpty) {
+
+      // if bag is empty put a dummy one with id as the unknown Id (last id), in hashing case, the num of hash buckets
+      Seq(TensorizeIn.IdValue(hashInfo.hashBucketSize, 0))
+    } else {
+      {
+        ntvs.flatMap {
+          ntv => {
+            val name = ntv.getAs[String](NTV_NAME)
+            val term = ntv.getAs[String](NTV_TERM)
+            val value = ntv.getAs[Float](NTV_VALUE)
+
+            HashingUtils.multiHash(s"$name,$term", hashInfo.numHashFunctions, hashInfo.hashBucketSize)
+              .map(id => TensorizeIn.IdValue(id, value))
+          }
+        }.groupBy(_.id).map {
+          group => {
+            val idValue = group._2.reduce {
+              (a, b) => {
+                hashInfo.combiner match {
+                  case Combiner.SUM | Combiner.AVG => a.copy(value = a.value + b.value)
+                  case Combiner.MAX => a.copy(value = scala.math.max(a.value, b.value))
                 }
               }
             }
-          }.toSeq
-        }
 
-        TensorizeIn.SparseVector(idValues.map(_.id), idValues.map(_.value))
-      }
+            if (hashInfo.combiner == Combiner.AVG) {
+              idValue.copy(value = idValue.value / group._2.size)
+            } else {
+              idValue
+            }
+          }
+        }
+      }.toSeq
     }
   }
 

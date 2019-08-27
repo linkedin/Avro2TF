@@ -51,9 +51,9 @@ class FeatureListGenerationTest extends WithLocalSparkSession {
     val dataFrame = session.read.avro(INPUT_TEXT_FILE_PATHS)
     val tensorizeInParams = TensorizeInJobParamsParser.parse(params)
 
-    val dataFrameExtracted = (new FeatureExtraction).run(dataFrame, tensorizeInParams)
-    val dataFrameTransformed = (new FeatureTransformation).run(dataFrameExtracted, tensorizeInParams)
-    (new FeatureListGeneration).run(dataFrameTransformed, tensorizeInParams)
+    val dataFrameExtracted = FeatureExtraction.run(dataFrame, tensorizeInParams)
+    val dataFrameTransformed = FeatureTransformation.run(dataFrameExtracted, tensorizeInParams)
+    FeatureListGeneration.run(dataFrameTransformed, tensorizeInParams)
 
     // Check if columns of String Array type and NTV struct type have feature lists generated
     val fileSystem = FileSystem.get(session.sparkContext.hadoopConfiguration)
@@ -146,9 +146,9 @@ class FeatureListGenerationTest extends WithLocalSparkSession {
     val dataFrame = session.read.avro(INPUT_TEXT_FILE_PATHS)
     val tensorizeInParams = TensorizeInJobParamsParser.parse(params)
 
-    val dataFrameExtracted = (new FeatureExtraction).run(dataFrame, tensorizeInParams)
-    val dataFrameTransformed = (new FeatureTransformation).run(dataFrameExtracted, tensorizeInParams)
-    (new FeatureListGeneration).run(dataFrameTransformed, tensorizeInParams)
+    val dataFrameExtracted = FeatureExtraction.run(dataFrame, tensorizeInParams)
+    val dataFrameTransformed = FeatureTransformation.run(dataFrameExtracted, tensorizeInParams)
+    FeatureListGeneration.run(dataFrameTransformed, tensorizeInParams)
   }
 
   /**
@@ -174,8 +174,8 @@ class FeatureListGenerationTest extends WithLocalSparkSession {
     val dataFrame = session.read.avro(INPUT_SHARE_FEATURE_PATH)
     val tensorizeInParams = TensorizeInJobParamsParser.parse(params)
 
-    val dataFrameExtracted = (new FeatureExtraction).run(dataFrame, tensorizeInParams)
-    (new FeatureListGeneration).run(dataFrameExtracted, tensorizeInParams)
+    val dataFrameExtracted = FeatureExtraction.run(dataFrame, tensorizeInParams)
+    FeatureListGeneration.run(dataFrameExtracted, tensorizeInParams)
 
     // Check if correct temporary feature lists are generated
     val fileSystem = FileSystem.get(session.sparkContext.hadoopConfiguration)
@@ -257,8 +257,8 @@ class FeatureListGenerationTest extends WithLocalSparkSession {
     val dataFrame = session.read.avro(INPUT_SHARE_FEATURE_PATH)
     val tensorizeInParams = TensorizeInJobParamsParser.parse(params)
 
-    val dataFrameExtracted = (new FeatureExtraction).run(dataFrame, tensorizeInParams)
-    (new FeatureListGeneration).run(dataFrameExtracted, tensorizeInParams)
+    val dataFrameExtracted = FeatureExtraction.run(dataFrame, tensorizeInParams)
+    FeatureListGeneration.run(dataFrameExtracted, tensorizeInParams)
 
     // get actual generated feature list
     val fileSystem = FileSystem.get(session.sparkContext.hadoopConfiguration)
@@ -320,8 +320,8 @@ class FeatureListGenerationTest extends WithLocalSparkSession {
     val dataFrame = session.read.avro(INPUT_SHARE_FEATURE_PATH)
     val tensorizeInParams = TensorizeInJobParamsParser.parse(params)
 
-    val dataFrameExtracted = (new FeatureExtraction).run(dataFrame, tensorizeInParams)
-    (new FeatureListGeneration).run(dataFrameExtracted, tensorizeInParams)
+    val dataFrameExtracted = FeatureExtraction.run(dataFrame, tensorizeInParams)
+    FeatureListGeneration.run(dataFrameExtracted, tensorizeInParams)
   }
 
   /**
@@ -346,8 +346,8 @@ class FeatureListGenerationTest extends WithLocalSparkSession {
     val dataFrame = session.read.avro(INPUT_SHARE_FEATURE_PATH)
     val tensorizeInParams = TensorizeInJobParamsParser.parse(params)
 
-    val dataFrameExtracted = (new FeatureExtraction).run(dataFrame, tensorizeInParams)
-    (new FeatureListGeneration).run(dataFrameExtracted, tensorizeInParams)
+    val dataFrameExtracted = FeatureExtraction.run(dataFrame, tensorizeInParams)
+    FeatureListGeneration.run(dataFrameExtracted, tensorizeInParams)
 
     // get actual generated feature list
     val fileSystem = FileSystem.get(session.sparkContext.hadoopConfiguration)

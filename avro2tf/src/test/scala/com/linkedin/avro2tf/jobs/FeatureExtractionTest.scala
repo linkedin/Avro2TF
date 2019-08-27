@@ -37,7 +37,7 @@ class FeatureExtractionTest extends WithLocalSparkSession {
     val dataFrame = session.read.avro(INPUT_TEXT_FILE_PATHS)
     val tensorizeInParams = TensorizeInJobParamsParser.parse(params)
 
-    val result = (new FeatureExtraction).run(dataFrame, tensorizeInParams)
+    val result = FeatureExtraction.run(dataFrame, tensorizeInParams)
 
     TensorizeInJobHelper.saveDataToHDFS(result, tensorizeInParams)
 

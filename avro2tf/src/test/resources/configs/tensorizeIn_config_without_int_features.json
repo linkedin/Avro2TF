@@ -35,8 +35,9 @@
       },
       "outputTensorInfo": {
         "name": "words_wideFeatures",
-        "dtype": "sparseVector",
-        "shape": []
+        "dtype": "float",
+        "shape": [],
+        "isSparse" : true
       }
     }
   ],
@@ -64,8 +65,9 @@
       },
       "outputTensorInfo": {
         "name": "words_wideFeatures_response",
-        "dtype": "sparseVector",
-        "shape": []
+        "dtype": "float",
+        "shape": [],
+        "isSparse" : true
       }
     }
   ]

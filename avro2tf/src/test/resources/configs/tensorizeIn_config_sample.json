@@ -70,6 +70,50 @@
               "wideFeatures"
             ]
           }
+        }
+      },
+      "outputTensorInfo": {
+        "name": "words_wideFeatures_sparse",
+        "dtype": "float",
+        "shape": [],
+        "isSparse" : true
+      }
+    },
+    {
+      "inputFeatureInfo": {
+        "columnConfig": {
+          "words": {
+            "whitelist": [
+              "*"
+            ]
+          },
+          "wideFeatures": {
+            "blacklist": [
+              "wideFeatures"
+            ]
+          }
+        }
+      },
+      "outputTensorInfo": {
+        "name": "words_wideFeatures_dense",
+        "dtype": "float",
+        "shape": [],
+        "isSparse" : false
+      }
+    },
+    {
+      "inputFeatureInfo": {
+        "columnConfig": {
+          "words": {
+            "whitelist": [
+              "*"
+            ]
+          },
+          "wideFeatures": {
+            "blacklist": [
+              "wideFeatures"
+            ]
+          }
         },
         "transformConfig": {
           "hashInfo": {
@@ -79,9 +123,10 @@
         }
       },
       "outputTensorInfo": {
-        "name": "words_wideFeatures",
-        "dtype": "sparseVector",
-        "shape": []
+        "name": "words_wideFeatures_hash",
+        "dtype": "float",
+        "shape": [],
+        "isSparse" : true
       }
     }
   ],
@@ -136,8 +181,9 @@
       },
       "outputTensorInfo": {
         "name": "words_wideFeatures_response",
-        "dtype": "sparseVector",
-        "shape": []
+        "dtype": "float",
+        "shape": [],
+        "isSparse" : true
       }
     }
   ]

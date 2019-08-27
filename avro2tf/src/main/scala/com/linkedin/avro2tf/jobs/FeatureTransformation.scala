@@ -8,7 +8,7 @@ import org.apache.spark.sql.DataFrame
  * The Feature Transformation job transforms features that will be converted to tensors and later used in training.
  *
  */
-class FeatureTransformation {
+object FeatureTransformation {
 
   /**
    * The main function to perform Feature Transformation job
