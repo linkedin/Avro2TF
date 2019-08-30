@@ -24,8 +24,8 @@ class FeatureIndicesConversionTest extends WithLocalSparkSession {
   def testData(): Array[Array[Any]] = {
 
     Array(
-      Array(AVRO_RECORD),
-      Array(TF_RECORD)
+      Array(AVRO_RECORD, false),
+      Array(TF_RECORD, true)
     )
   }
 
@@ -33,7 +33,7 @@ class FeatureIndicesConversionTest extends WithLocalSparkSession {
    * Test the correctness of indices conversion job
    */
   @Test(dataProvider = "testData")
-  def testConversion(outputFormat: String): Unit = {
+  def testConversion(outputFormat: String, discardUnknownEntries: Boolean): Unit = {
 
     val tensorizeInConfig = new File(
       getClass.getClassLoader.getResource(TENSORIZEIN_CONFIG_PATH_VALUE_SAMPLE).getFile
@@ -44,7 +44,8 @@ class FeatureIndicesConversionTest extends WithLocalSparkSession {
       INPUT_PATHS_NAME, INPUT_TEXT_FILE_PATHS,
       WORKING_DIRECTORY_NAME, WORKING_DIRECTORY_INDICES_CONVERSION,
       TENSORIZEIN_CONFIG_PATH_NAME, tensorizeInConfig,
-      OUTPUT_FORMAT_NAME, outputFormat
+      OUTPUT_FORMAT_NAME, outputFormat,
+      DISCARD_UNKNOWN_ENTRIES_NAME, discardUnknownEntries.toString
     )
     val dataFrame = session.read.avro(INPUT_TEXT_FILE_PATHS)
     val tensorizeInParams = if (outputFormat == TF_RECORD) {

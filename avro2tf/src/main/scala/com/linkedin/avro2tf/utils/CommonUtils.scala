@@ -29,7 +29,7 @@ object CommonUtils {
   }
 
   /**
-   * Check if the type of a column is an (nested) array of name-term-value
+   * Check if the type of a column is an array of name-term-value
    *
    * @param dataType The schema type of a column
    * @return is array of NTV or not
@@ -41,7 +41,6 @@ object CommonUtils {
         arrayType.elementType match {
           case ntvType: StructType => ntvType.fieldNames.length == 3 && ntvType.fieldNames.contains(NTV_NAME) &&
             ntvType.fieldNames.contains(NTV_TERM) && ntvType.fieldNames.contains(NTV_VALUE)
-          case arrayType: ArrayType => isArrayOfNTV(arrayType)
           case _ => false
         }
       case _ => false
@@ -65,7 +64,7 @@ object CommonUtils {
   }
 
   /**
-   * Check if the type of a column is an (nested) array of sparse vector
+   * Check if the type of a column is an array of sparse vector
    *
    * @param dataType The schema type of a column
    * @return is array of [[com.linkedin.avro2tf.jobs.TensorizeIn.SparseVector]]
@@ -76,7 +75,6 @@ object CommonUtils {
       case arrayType: ArrayType =>
         arrayType.elementType match {
           case sparseVectorType: StructType => isSparseVector(sparseVectorType)
-          case arrayType: ArrayType => isArrayOfSparseVector(arrayType)
           case _ => false
         }
       case _ => false
@@ -84,7 +82,7 @@ object CommonUtils {
   }
 
   /**
-   * Check if the type of a column is an (nested) array of String
+   * Check if the type of a column is an array of String
    *
    * @param dataType The schema type of a column
    * @return is array of String or not
@@ -95,7 +93,6 @@ object CommonUtils {
       case arrayType: ArrayType =>
         arrayType.elementType match {
           case _: StringType => true
-          case arrayType: ArrayType => isArrayOfString(arrayType)
           case _ => false
         }
       case _ => false

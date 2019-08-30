@@ -48,7 +48,7 @@ object TextTokenizationTransformer {
    * Tokenize text feature with information on removing stop words
    *
    * @param dataFrame Input data Spark DataFrame
-   * @param tokenizationConfigOpt Optional tokenization configuration in transformation configuration
+   * @param tokenizationConfig Optional tokenization configuration in transformation configuration
    * @param regexedColName Output column name with a regexed suffix
    * @param outputColName Name in output tensor information
    * @return A Spark DataFrame

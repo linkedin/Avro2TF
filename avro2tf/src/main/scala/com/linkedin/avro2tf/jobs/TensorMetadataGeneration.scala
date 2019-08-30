@@ -95,6 +95,7 @@ object TensorMetadataGeneration {
       // Get list statuses and block locations of the feature list files from the given path
       val featureListFiles = fileSystem.listFiles(new Path(params.workingDir.featureListPath), ENABLE_RECURSIVE)
       val colsWithFeatureListCardinalityMapping = new mutable.HashMap[String, Long]
+      val discardUNK = if (params.discardUnknownEntries) 0 else 1
 
       while (featureListFiles.hasNext) {
         // Get the source path of feature list file
@@ -103,7 +104,9 @@ object TensorMetadataGeneration {
         val columnName = sourcePath.getName
 
         colsWithFeatureListCardinalityMapping
-          .put(columnName, Source.fromInputStream(fileSystem.open(sourcePath), UTF_8.name()).getLines().size + 1)
+          .put(
+            columnName,
+            Source.fromInputStream(fileSystem.open(sourcePath), UTF_8.name()).getLines().size + discardUNK)
       }
 
       colsWithFeatureListCardinalityMapping.toMap

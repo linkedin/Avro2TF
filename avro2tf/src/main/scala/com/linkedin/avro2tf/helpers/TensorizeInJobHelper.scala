@@ -230,7 +230,7 @@ object TensorizeInJobHelper {
   private def wrapStringArray: UserDefinedFunction = {
 
     udf {
-      stringSeq: Seq[String] => Seq(stringSeq)
+      stringSeq: Seq[String] => Seq(stringSeq.map(x => Seq(x)))
     }
   }
 }
