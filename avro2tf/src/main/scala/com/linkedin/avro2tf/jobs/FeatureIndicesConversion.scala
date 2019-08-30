@@ -148,7 +148,8 @@ object FeatureIndicesConversion {
     udf {
       ntvs: Seq[Row] => {
         val idValues = convertNTVToIdValues(ntvs, featureMapping, discardUnknownEntries)
-        CommonUtils.idValuesToDense(idValues, featureMapping.size + 1)
+        val cardinality = if (discardUnknownEntries) featureMapping.size else featureMapping.size + 1
+        CommonUtils.idValuesToDense(idValues, cardinality)
       }
     }
   }
@@ -168,9 +169,10 @@ object FeatureIndicesConversion {
     // The number of unique name-term combinations
     val cardinality = featureMapping.size.toLong
     val lastIndex = if (discardUnknownEntries) cardinality - 1 else cardinality
+    val paddingEntry = Seq(TensorizeIn.IdValue(lastIndex, 0))
     if (ntvs == null || ntvs.isEmpty) {
       // if bag is empty put a dummy one with id as the unknown Id (last id) = cardinality
-      Seq(TensorizeIn.IdValue(lastIndex, 0))
+      paddingEntry
     } else {
       val idValuesBuffer = new mutable.ArrayBuffer[TensorizeIn.IdValue]
       val unknownIdValue = TensorizeIn.IdValue(lastIndex, 1)
@@ -192,8 +194,11 @@ object FeatureIndicesConversion {
       }
 
       // if multiple name+term are mapped to unknown id, we only keep one of them with value 1.0
-      if (idValuesBuffer.isEmpty || (!discardUnknownEntries && hasUnknownId)) {
+      if (!discardUnknownEntries && hasUnknownId) {
         idValuesBuffer.append(unknownIdValue)
+      }
+      if (idValuesBuffer.isEmpty) {
+        idValuesBuffer.appendAll(paddingEntry)
       }
       idValuesBuffer
     }
