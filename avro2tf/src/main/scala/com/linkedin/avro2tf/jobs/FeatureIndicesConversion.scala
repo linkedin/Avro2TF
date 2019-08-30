@@ -169,10 +169,10 @@ object FeatureIndicesConversion {
     // The number of unique name-term combinations
     val cardinality = featureMapping.size.toLong
     val lastIndex = if (discardUnknownEntries) cardinality - 1 else cardinality
-    val paddingEntry = Seq(TensorizeIn.IdValue(lastIndex, 0))
+    val paddingEntry = TensorizeIn.IdValue(lastIndex, 0)
     if (ntvs == null || ntvs.isEmpty) {
       // if bag is empty put a dummy one with id as the unknown Id (last id) = cardinality
-      paddingEntry
+      Seq(paddingEntry)
     } else {
       val idValuesBuffer = new mutable.ArrayBuffer[TensorizeIn.IdValue]
       val unknownIdValue = TensorizeIn.IdValue(lastIndex, 1)
@@ -198,7 +198,7 @@ object FeatureIndicesConversion {
         idValuesBuffer.append(unknownIdValue)
       }
       if (idValuesBuffer.isEmpty) {
-        idValuesBuffer.appendAll(paddingEntry)
+        idValuesBuffer.append(paddingEntry)
       }
       idValuesBuffer
     }
