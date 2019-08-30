@@ -36,8 +36,9 @@
       },
       "outputTensorInfo": {
         "name": "genreFeatures",
-        "dtype": "sparseVector",
-        "shape": []
+        "dtype": "float",
+        "shape": [],
+        "isSparse" : true
       }
     },
     {
@@ -63,8 +64,9 @@
       },
       "outputTensorInfo": {
         "name": "genreFeatures_movieLatentFactorFeatures",
-        "dtype": "sparseVector",
-        "shape": []
+        "dtype": "float",
+        "shape": [],
+        "isSparse" : true
       }
     }
   ],

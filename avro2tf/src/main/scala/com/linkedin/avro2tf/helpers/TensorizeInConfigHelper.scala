@@ -70,4 +70,16 @@ object TensorizeInConfigHelper {
     concatFeaturesAndLabels(params).map(feature => feature.outputTensorInfo.name -> feature.outputTensorInfo.dtype)
       .toMap
   }
+
+  /**
+   * Get output tensor sparsity from TensorizeIn configuration
+   *
+   * @param params TensorizeIn parameters specified by user
+   * @return A map of output tensor name to isSparse
+   */
+  def getOutputTensorSparsity(params: TensorizeInParams): Map[String, Boolean] = {
+
+    concatFeaturesAndLabels(params).map(feature => feature.outputTensorInfo.name -> feature.outputTensorInfo.isSparse)
+      .toMap
+  }
 }

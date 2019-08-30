@@ -9,7 +9,7 @@ import scala.io.Source
 import com.linkedin.avro2tf.helpers.TensorizeInConfigHelper
 import com.linkedin.avro2tf.parsers.TensorizeInParams
 import com.linkedin.avro2tf.utils.Constants._
-import com.linkedin.avro2tf.utils.{Constants, IOUtils}
+import com.linkedin.avro2tf.utils.{CommonUtils, Constants, IOUtils}
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.functions._
@@ -20,7 +20,7 @@ import io.circe.syntax._
 /**
  * The Tensor Metadata job generates tensor metadata that will be later used in training with tensors.
  */
-class TensorMetadataGeneration {
+object TensorMetadataGeneration {
 
   /**
    * The main function to perform Tensor Metadata Generation job
@@ -34,14 +34,25 @@ class TensorMetadataGeneration {
     import com.linkedin.avro2tf.configs.JsonCodecs._
 
     val fileSystem = FileSystem.get(dataFrame.sparkSession.sparkContext.hadoopConfiguration)
+    val colsWithHashInfoCardinalityMapping = getColsWithHashInfoCardinalityMapping(params)
     val colsToFeatureCardinalityMapping: Map[String, Long] =
       getColsWithFeatureListCardinalityMapping(params, fileSystem) ++
         getColsOfIntOrLongCardinalityMapping(dataFrame, params) ++
-        getColsWithHashInfoCardinalityMapping(params)
+        colsWithHashInfoCardinalityMapping
+
+    val ntvColumns = dataFrame.columns.filter(
+      colName => CommonUtils.isArrayOfNTV(dataFrame.schema(colName).dataType) ||
+
+        // after hashing, may already be SparseVector or array of floats
+        (colsWithHashInfoCardinalityMapping.contains(colName) &&
+          (CommonUtils.isArrayOfFloat(dataFrame.schema(colName).dataType) ||
+            CommonUtils.isSparseVector(dataFrame.schema(colName).dataType)))
+    ).toSet
 
     var featuresTensorMetadata = generateTensorMetadata(
       params.tensorizeInConfig.features,
-      colsToFeatureCardinalityMapping)
+      colsToFeatureCardinalityMapping,
+      ntvColumns)
     if (params.partitionFieldName.nonEmpty) {
       featuresTensorMetadata = featuresTensorMetadata :+ TensorMetadata(
         Constants.PARTITION_ID_FIELD_NAME,
@@ -53,12 +64,13 @@ class TensorMetadataGeneration {
 
     val labelsTensorMetadata = generateTensorMetadata(
       params.tensorizeInConfig.labels,
-      colsToFeatureCardinalityMapping)
+      colsToFeatureCardinalityMapping,
+      ntvColumns)
 
     // Serialize TensorizeIn Tensor Metadata to JSON String
     val serializedTensorMetadata = TensorizeInTensorMetadata(featuresTensorMetadata, labelsTensorMetadata).asJson
       .toString()
-
+    println(serializedTensorMetadata)
     IOUtils
       .writeContentToHDFS(
         fileSystem,
@@ -157,28 +169,24 @@ class TensorMetadataGeneration {
    */
   private def generateTensorMetadata(
     featuresOrLabels: Seq[Feature],
-    colsToFeatureCardinalityMapping: Map[String, Long]): Seq[TensorMetadata] = {
+    colsToFeatureCardinalityMapping: Map[String, Long],
+    ntvColumns: Set[String]): Seq[TensorMetadata] = {
 
     featuresOrLabels.map {
       featureOrLabel =>
-        if (featureOrLabel.outputTensorInfo.dtype == DataType.sparseVector) {
-          val cardinality = colsToFeatureCardinalityMapping.get(featureOrLabel.outputTensorInfo.name)
-          val shape = cardinality
-            .fold(featureOrLabel.outputTensorInfo.shape)(featureOrLabel.outputTensorInfo.shape :+ _.toInt)
-          TensorMetadata(
-            featureOrLabel.outputTensorInfo.name,
-            DataType.float,
-            shape,
-            None,
-            isSparse = true
-          )
+        val cardinality = colsToFeatureCardinalityMapping.get(featureOrLabel.outputTensorInfo.name)
+        val shape = if (ntvColumns.contains(featureOrLabel.outputTensorInfo.name)) {
+          cardinality.fold(featureOrLabel.outputTensorInfo.shape)(featureOrLabel.outputTensorInfo.shape :+ _.toInt)
         } else {
-          TensorMetadata(
-            featureOrLabel.outputTensorInfo.name,
-            featureOrLabel.outputTensorInfo.dtype,
-            featureOrLabel.outputTensorInfo.shape,
-            colsToFeatureCardinalityMapping.get(featureOrLabel.outputTensorInfo.name))
+          featureOrLabel.outputTensorInfo.shape
         }
+
+        TensorMetadata(
+          name = featureOrLabel.outputTensorInfo.name,
+          dtype = featureOrLabel.outputTensorInfo.dtype,
+          shape = shape,
+          cardinality = if (ntvColumns.contains(featureOrLabel.outputTensorInfo.name)) None else cardinality,
+          isSparse = featureOrLabel.outputTensorInfo.isSparse)
     }
   }
 }

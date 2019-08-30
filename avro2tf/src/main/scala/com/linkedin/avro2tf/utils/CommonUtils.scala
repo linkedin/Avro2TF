@@ -1,6 +1,7 @@
 package com.linkedin.avro2tf.utils
 
 import com.linkedin.avro2tf.configs.DataType
+import com.linkedin.avro2tf.jobs.TensorizeIn
 import com.linkedin.avro2tf.utils.Constants._
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.types._
@@ -48,19 +49,34 @@ object CommonUtils {
   }
 
   /**
+   * Check if the type of a column is an of sparse vector
+   *
+   * @param dataType The schema type of a column
+   * @return is type of [[com.linkedin.avro2tf.jobs.TensorizeIn.SparseVector]]
+   */
+  def isSparseVector(dataType: DataType): Boolean = {
+
+    dataType match {
+      case sparseVectorType: StructType => sparseVectorType.fieldNames.length == 2 &&
+        sparseVectorType.fieldNames.contains(INDICES) &&
+        sparseVectorType.fieldNames.contains(VALUES)
+      case _ => false
+    }
+  }
+
+  /**
    * Check if the type of a column is an (nested) array of sparse vector
    *
    * @param dataType The schema type of a column
    * @return is array of [[com.linkedin.avro2tf.jobs.TensorizeIn.SparseVector]]
    */
-  def isArrayOfSparseTensor(dataType: DataType): Boolean = {
+  def isArrayOfSparseVector(dataType: DataType): Boolean = {
 
     dataType match {
       case arrayType: ArrayType =>
         arrayType.elementType match {
-          case ntvType: StructType => ntvType.fieldNames.length == 2 && ntvType.fieldNames.contains(INDICES) &&
-            ntvType.fieldNames.contains(VALUES)
-          case arrayType: ArrayType => isArrayOfNTV(arrayType)
+          case sparseVectorType: StructType => isSparseVector(sparseVectorType)
+          case arrayType: ArrayType => isArrayOfSparseVector(arrayType)
           case _ => false
         }
       case _ => false
@@ -188,6 +204,21 @@ object CommonUtils {
    * @return If the tensor is integer tensor
    */
   def isIntegerTensor(tensorType: DataType.Value): Boolean = {
+
     tensorType == DataType.int || tensorType == DataType.long
+  }
+
+  /**
+   * Convert  a Seq of Id-value pairs to one dense value array
+   *
+   * @param idValues A Seq of Id-value pairs
+   * @param cardinality The cardinality of Ids
+   * @return One dense value array
+   */
+  def idValuesToDense(idValues: Seq[TensorizeIn.IdValue], cardinality: Int): Seq[Float] = {
+
+    val values = new Array[Float](cardinality)
+    idValues.foreach(idValue => values(idValue.id.toInt) = idValue.value)
+    values.toSeq
   }
 }

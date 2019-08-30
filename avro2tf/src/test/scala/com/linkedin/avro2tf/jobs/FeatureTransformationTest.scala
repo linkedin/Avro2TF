@@ -37,8 +37,8 @@ class FeatureTransformationTest extends WithLocalSparkSession {
     val dataFrame = session.read.avro(INPUT_TEXT_FILE_PATHS)
     val tensorizeInParams = TensorizeInJobParamsParser.parse(params)
 
-    val dataFrameExtracted = (new FeatureExtraction).run(dataFrame, tensorizeInParams)
-    val result = (new FeatureTransformation).run(dataFrameExtracted, tensorizeInParams)
+    val dataFrameExtracted = FeatureExtraction.run(dataFrame, tensorizeInParams)
+    val result = FeatureTransformation.run(dataFrameExtracted, tensorizeInParams)
 
     TensorizeInJobHelper.saveDataToHDFS(result, tensorizeInParams)
 
@@ -70,8 +70,8 @@ class FeatureTransformationTest extends WithLocalSparkSession {
     val dataFrame = session.read.avro(INPUT_TEXT_FILE_PATHS)
     val tensorizeInParams = TensorizeInJobParamsParser.parse(params)
 
-    val dataFrameExtracted = (new FeatureExtraction).run(dataFrame, tensorizeInParams)
-    val result = (new FeatureTransformation).run(dataFrameExtracted, tensorizeInParams)
+    val dataFrameExtracted = FeatureExtraction.run(dataFrame, tensorizeInParams)
+    val result = FeatureTransformation.run(dataFrameExtracted, tensorizeInParams)
 
     // Check if the actual columns of the result DataFrame match those specified in TensorizeIn parameters
     TestUtil.checkOutputColumns(result, tensorizeInParams)
@@ -80,7 +80,7 @@ class FeatureTransformationTest extends WithLocalSparkSession {
     val records = session.read.avro(tensorizeInParams.workingDir.trainingDataPath).collect()
     records.foreach {
       record: Row => {
-        val indicies = record.getAs[Row](FEATURE_WORDS_WIDE_FEATURES_COL_NAME).getAs[Seq[Long]](SPARSE_VECTOR_INDICES_FIELD_NAME)
+        val indicies = record.getAs[Row](FEATURE_WORDS_WIDE_FEATURES_HASH_COL_NAME).getAs[Seq[Long]](SPARSE_VECTOR_INDICES_FIELD_NAME)
         // Make sure ids are distinct
         assertEquals(indicies.length, indicies.distinct.length)
         // Make sure ids are all within the specified bucket size

@@ -29,24 +29,24 @@ object TensorizeIn {
     TensorizeInJobHelper.tensorsNameCheck(dataFrame, params)
 
     // Extracts features that will be converted to tensors
-    dataFrame = (new FeatureExtraction).run(dataFrame, params)
+    dataFrame = FeatureExtraction.run(dataFrame, params)
 
     // Transforms features that will be converted to tensors
-    dataFrame = (new FeatureTransformation).run(dataFrame, params)
+    dataFrame = FeatureTransformation.run(dataFrame, params)
 
     // Generate tensor metadata only in train mode; otherwise, directly load existing ones from working directory
     if (params.executionMode == TrainingMode.training) {
       if (params.enableCache) dataFrame.persist(StorageLevel.MEMORY_AND_DISK_SER)
 
       // Generate tensor metadata
-      (new FeatureListGeneration).run(dataFrame, params)
-      (new TensorMetadataGeneration).run(dataFrame, params)
+      FeatureListGeneration.run(dataFrame, params)
+      TensorMetadataGeneration.run(dataFrame, params)
     }
 
     // Convert indices if not skipped
     if (!params.skipConversion) {
       // Convert String indices to numerical Id indices
-      dataFrame = (new FeatureIndicesConversion).run(dataFrame, params)
+      dataFrame = FeatureIndicesConversion.run(dataFrame, params)
       if (params.partitionFieldName.nonEmpty) {
         dataFrame = PartitionIdGeneration.run(dataFrame, params)
       }

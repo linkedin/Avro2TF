@@ -12,8 +12,9 @@
       },
       "outputTensorInfo": {
         "name": "fruits_day1",
-        "dtype": "sparseVector",
-        "shape": []
+        "dtype": "float",
+        "shape": [],
+        "isSparse" : true
       }
     },
     {
@@ -28,8 +29,9 @@
       },
       "outputTensorInfo": {
         "name": "fruits_day2",
-        "dtype": "sparseVector",
-        "shape": []
+        "dtype": "float",
+        "shape": [],
+        "isSparse" : true
       }
     },
     {
@@ -44,8 +46,9 @@
       },
       "outputTensorInfo": {
         "name": "fruits_day3",
-        "dtype": "sparseVector",
-        "shape": []
+        "dtype": "float",
+        "shape": [],
+        "isSparse" : true
       }
     },
     {
@@ -60,8 +63,9 @@
       },
       "outputTensorInfo": {
         "name": "fruits_day4",
-        "dtype": "sparseVector",
-        "shape": []
+        "dtype": "float",
+        "shape": [],
+        "isSparse" : true
       }
     },
     {

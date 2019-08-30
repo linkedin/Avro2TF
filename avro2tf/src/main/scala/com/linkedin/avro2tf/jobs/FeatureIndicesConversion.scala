@@ -19,7 +19,7 @@ import org.apache.spark.sql.types.StringType
 import org.apache.spark.sql.{Column, DataFrame, Row}
 import org.slf4j.{Logger, LoggerFactory}
 
-class FeatureIndicesConversion {
+object FeatureIndicesConversion {
   val logger: Logger = LoggerFactory.getLogger(this.getClass)
 
   /**
@@ -33,6 +33,7 @@ class FeatureIndicesConversion {
 
     val columnFeatureMapping = loadColumnFeatureList(params, dataFrame.sparkSession.sparkContext.hadoopConfiguration)
     val outputTensorDataTypes = TensorizeInConfigHelper.getOutputTensorDataTypes(params)
+    val outputTensorSparsity = TensorizeInConfigHelper.getOutputTensorSparsity(params)
     val dataFrameSchema = dataFrame.schema
     val convertedColumns = new mutable.ArrayBuffer[Column]
     val convertedColumnNames = new mutable.HashSet[String]
@@ -42,7 +43,7 @@ class FeatureIndicesConversion {
         if (CommonUtils.isArrayOfString(dataFrameSchema(columnName).dataType) ||
           dataFrameSchema(columnName).dataType.isInstanceOf[StringType]) {
           if (outputTensorDataTypes(columnName) == DataType.int || outputTensorDataTypes(columnName) == DataType.long) {
-            if(dataFrameSchema(columnName).dataType.isInstanceOf[StringType]){
+            if (dataFrameSchema(columnName).dataType.isInstanceOf[StringType]) {
               convertedColumns.append(convertStringToId(featureMapping)(dataFrame(columnName)).name(columnName))
             } else {
               convertedColumns.append(convertStringSeqToIdSeq(featureMapping)(dataFrame(columnName)).name(columnName))
@@ -56,7 +57,11 @@ class FeatureIndicesConversion {
             )
           }
         } else if (CommonUtils.isArrayOfNTV(dataFrameSchema(columnName).dataType)) {
-          convertedColumns.append(convertNTVToSparseVector(featureMapping)(dataFrame(columnName)).name(columnName))
+          if (outputTensorSparsity(columnName)) {
+            convertedColumns.append(convertNTVToSparseVector(featureMapping)(dataFrame(columnName)).name(columnName))
+          } else {
+            convertedColumns.append(convertNTVToDenseVector(featureMapping)(dataFrame(columnName)).name(columnName))
+          }
           convertedColumnNames.add(columnName)
         } else {
           throw new IllegalArgumentException(s"Data type of column: $columnName is not supported")
@@ -109,41 +114,66 @@ class FeatureIndicesConversion {
 
     udf {
       ntvs: Seq[Row] => {
-        // The number of unique name-term combinations
-        val cardinality = featureMapping.size.toLong
-        val idValues = if (ntvs == null || ntvs.isEmpty) {
-          // if bag is empty put a dummy one with id as the unknown Id (last id) = cardinality
-          Seq(TensorizeIn.IdValue(cardinality, 0))
-        } else {
-          val idValuesBuffer = new mutable.ArrayBuffer[TensorizeIn.IdValue]
-          val unknownIdValue = TensorizeIn.IdValue(cardinality, 1)
-          var hasUnknownId = false
-
-          ntvs.foreach {
-            ntv => {
-              val name = ntv.getAs[String](NTV_NAME)
-              val term = ntv.getAs[String](NTV_TERM)
-              val value = CommonUtils.convertValueOfNTVToFloat(ntv)
-              val id = featureMapping.getOrElse(s"$name,$term", cardinality)
-
-              if (id == cardinality) {
-                hasUnknownId = true
-              } else {
-                idValuesBuffer.append(TensorizeIn.IdValue(id, value))
-              }
-            }
-          }
-
-          // if multiple name+term are mapped to unknown id, we only keep one of them with value 1.0
-          if (hasUnknownId) {
-            idValuesBuffer.append(unknownIdValue)
-          }
-
-          idValuesBuffer
-        }
-
+        val idValues = convertNTVToIdValues(ntvs, featureMapping)
         TensorizeIn.SparseVector(idValues.map(_.id), idValues.map(_.value))
       }
+    }
+  }
+
+  /**
+   * Spark UDF function to convert a column of NTVs to a column of dense vector
+   *
+   * @param featureMapping The mapping of name+term to id
+   * @return A Spark udf
+   */
+  private def convertNTVToDenseVector(featureMapping: Map[String, Long]): UserDefinedFunction = {
+
+    udf {
+      ntvs: Seq[Row] => {
+        val idValues = convertNTVToIdValues(ntvs, featureMapping)
+        CommonUtils.idValuesToDense(idValues, featureMapping.size + 1)
+      }
+    }
+  }
+
+  /**
+   *
+   * @param ntvs A seq of NTV in Row type
+   * @param featureMapping The mapping of name+term to id
+   * @return A seq of IdValue
+   */
+  private def convertNTVToIdValues(ntvs: Seq[Row], featureMapping: Map[String, Long]): Seq[TensorizeIn.IdValue] = {
+
+    // The number of unique name-term combinations
+    val cardinality = featureMapping.size.toLong
+    if (ntvs == null || ntvs.isEmpty) {
+      // if bag is empty put a dummy one with id as the unknown Id (last id) = cardinality
+      Seq(TensorizeIn.IdValue(cardinality, 0))
+    } else {
+      val idValuesBuffer = new mutable.ArrayBuffer[TensorizeIn.IdValue]
+      val unknownIdValue = TensorizeIn.IdValue(cardinality, 1)
+      var hasUnknownId = false
+
+      ntvs.foreach {
+        ntv => {
+          val name = ntv.getAs[String](NTV_NAME)
+          val term = ntv.getAs[String](NTV_TERM)
+          val value = CommonUtils.convertValueOfNTVToFloat(ntv)
+          val id = featureMapping.getOrElse(s"$name,$term", cardinality)
+
+          if (id == cardinality) {
+            hasUnknownId = true
+          } else {
+            idValuesBuffer.append(TensorizeIn.IdValue(id, value))
+          }
+        }
+      }
+
+      // if multiple name+term are mapped to unknown id, we only keep one of them with value 1.0
+      if (hasUnknownId) {
+        idValuesBuffer.append(unknownIdValue)
+      }
+      idValuesBuffer
     }
   }
 

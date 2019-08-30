@@ -198,14 +198,14 @@ object TensorizeInJobHelper {
    */
   private def prepareTFRecord(dataFrame: DataFrame, params: TensorizeInParams): DataFrame = {
 
-    val outputTensorDataTypes = TensorizeInConfigHelper.getOutputTensorDataTypes(params)
+    val outputTensorSparsity = TensorizeInConfigHelper.getOutputTensorSparsity(params)
     val newConvertedColumns = new mutable.ArrayBuffer[Column]
     val convertedColumnNames = new mutable.HashSet[String]
     val dataFrameSchema = dataFrame.schema
 
-    outputTensorDataTypes.foreach {
-      case (columnName, dataType) =>
-        if (dataType == DataType.sparseVector) {
+    outputTensorSparsity.foreach {
+      case (columnName, isSparse) =>
+        if (isSparse) {
           // Construct two separate indices and values columns for SparseVector data type
           newConvertedColumns.append(expr(s"$columnName.$INDICES").alias(s"$columnName-$INDICES"))
           newConvertedColumns.append(expr(s"$columnName.$VALUES").alias(s"$columnName-$VALUES"))
