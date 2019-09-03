@@ -78,7 +78,6 @@ The sparseVector type will be converted to tf.SparseTensor.
 | String                                        | tf.string                                           |
 | bytes                                         | tf.string                                           |
 | boolean                                       | tf.bool                                             |
-| sparseVector                                  | tf.SparseTensor                                     |
 
 ### Avro2TF Configuration
 The below table shows all the available configuration names and their detailed explanation.
@@ -101,6 +100,260 @@ The below table shows all the available configuration names and their detailed e
 | name               | yes       | /                                          | Name of output tensor.                                                                                                                                                             |
 | dtype              | yes       | /                                          | The expected dtype of output tensor.                                                                                                                                               |
 | shape              | no        | []                                         | The expected shape of output tensor, examples: []: scalar; sparse vector; [-1] : 1D array of any length; [6]: 1D array with size 6; [2, 3]: matrix with 2 rows and 3 columns.      |
+| isSparse           | no        | false                                      | To indicate whether the output tensor is sparse tensor.
+#### Avro2TF Config Example
+
+Suppose your input data has the following schema
+```
+{
+  "type": "record",
+  "name": "topLevelRecord",
+  "fields": [
+    {
+      "type": [
+        "int",
+        "null"
+      ],
+      "name": "label"
+    },
+    {
+      "type": [
+        "string",
+        "null"
+      ],
+      "name": "review"
+    },
+    {
+      "type": [
+        {
+          "type": "array",
+          "items": [
+            {
+              "type": "record",
+              "name": "words",
+              "namespace": "topLevelRecord",
+              "fields": [
+                {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "name": "name"
+                },
+                {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "name": "term"
+                },
+                {
+                  "type": [
+                    "float",
+                    "null"
+                  ],
+                  "name": "value"
+                }
+              ]
+            },
+            "null"
+          ]
+        },
+        "null"
+      ],
+      "name": "words"
+    },
+    {
+      "type": [
+        {
+          "type": "array",
+          "items": [
+            {
+              "type": "record",
+              "name": "wideFeatures",
+              "namespace": "topLevelRecord",
+              "fields": [
+                {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "name": "name"
+                },
+                {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "name": "term"
+                },
+                {
+                  "type": [
+                    "float",
+                    "null"
+                  ],
+                  "name": "value"
+                }
+              ]
+            },
+            "null"
+          ]
+        },
+        "null"
+      ],
+      "name": "wideFeatures"
+    }
+  ]
+}
+```
+An example Avro2TF config will looks like this:
+```
+{
+  "features": [
+    {
+      "inputFeatureInfo": {
+        "columnExpr": "words.term[0]"
+      },
+      "outputTensorInfo": {
+        "name": "firstWord",
+        "dtype": "long",
+        "shape": []
+      }
+    },
+    {
+      "inputFeatureInfo": {
+        "columnExpr": "review",
+        "transformConfig": {
+          "tokenization": {
+            "removeStopWords": true
+          }
+        }
+      },
+      "outputTensorInfo": {
+        "name": "wordSeq",
+        "dtype": "long",
+        "shape": [
+          -1
+        ]
+      }
+    },
+    {
+      "inputFeatureInfo": {
+        "columnExpr": "review",
+        "transformConfig": {
+          "hashInfo": {
+            "hashBucketSize": 1000,
+            "numHashFunctions": 4
+          }
+        }
+      },
+      "outputTensorInfo": {
+        "name": "wordSeq_hashed",
+        "dtype": "long",
+        "shape": [
+          4
+        ]
+      }
+    },
+    {
+      "inputFeatureInfo": {
+        "columnExpr": "words.term"
+      },
+      "outputTensorInfo": {
+        "name": "words_term",
+        "dtype": "long",
+        "shape": [
+          -1
+        ]
+      }
+    },
+    {
+      "inputFeatureInfo": {
+        "columnConfig": {
+          "words": {
+            "whitelist": [
+              "*"
+            ]
+          },
+          "wideFeatures": {
+            "blacklist": [
+              "wideFeatures"
+            ]
+          }
+        }
+      },
+      "outputTensorInfo": {
+        "name": "words_wideFeatures_sparse",
+        "dtype": "float",
+        "shape": [],
+        "isSparse" : true
+      }
+    },
+    {
+      "inputFeatureInfo": {
+        "columnConfig": {
+          "words": {
+            "whitelist": [
+              "*"
+            ]
+          },
+          "wideFeatures": {
+            "blacklist": [
+              "wideFeatures"
+            ]
+          }
+        }
+      },
+      "outputTensorInfo": {
+        "name": "words_wideFeatures_dense",
+        "dtype": "float",
+        "shape": [],
+        "isSparse" : false
+      }
+    },
+    {
+      "inputFeatureInfo": {
+        "columnConfig": {
+          "words": {
+            "whitelist": [
+              "*"
+            ]
+          },
+          "wideFeatures": {
+            "blacklist": [
+              "wideFeatures"
+            ]
+          }
+        },
+        "transformConfig": {
+          "hashInfo": {
+            "hashBucketSize": 100,
+            "combiner": "AVG"
+          }
+        }
+      },
+      "outputTensorInfo": {
+        "name": "words_wideFeatures_hash",
+        "dtype": "float",
+        "shape": [],
+        "isSparse" : true
+      }
+    }
+  ],
+  "labels": [
+    {
+      "inputFeatureInfo": {
+        "columnExpr": "label"
+      },
+      "outputTensorInfo": {
+        "name": "response",
+        "dtype": "int",
+        "shape": []
+      }
+    }
+  ]
+}
+```
 
 ### Avro2TF Job Parameters
 

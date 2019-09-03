@@ -47,7 +47,8 @@ case class TensorizeInParams(
   tensorsSharingFeatureLists: Array[Array[String]],
   numPartitions: Int,
   partitionFieldName: String,
-  termOnlyFeatureList: Boolean
+  termOnlyFeatureList: Boolean,
+  discardUnknownEntries: Boolean
 )
 
 /**
@@ -315,6 +316,14 @@ object TensorizeInJobParamsParser {
         """Optional.
           |Whether to output term only feature list""".stripMargin
       )
+
+    opt[Boolean]("discard-unknown-entries")
+      .action((discardUnknownEntries, tensorizeInParams) => tensorizeInParams.copy(discardUnknownEntries = discardUnknownEntries))
+      .optional()
+      .text(
+        """Optional.
+          |Whether to discard unknown entries during indices conversion""".stripMargin
+      )
   }
 
   /**
@@ -346,7 +355,8 @@ object TensorizeInJobParamsParser {
         tensorsSharingFeatureLists = Array[Array[String]](),
         numPartitions = 100,
         partitionFieldName = "",
-        termOnlyFeatureList = false
+        termOnlyFeatureList = false,
+        discardUnknownEntries = false
       )
     ) match {
       case Some(params) =>

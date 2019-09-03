@@ -10,7 +10,7 @@ import com.fasterxml.jackson.module.scala.JsonScalaEnumeration
  */
 object DataType extends Enumeration {
   type DataType = Value
-  val string, int, long, double, float, byte = Value
+  val string, int, long, double, float, byte, boolean = Value
 }
 
 class DataTypeRef extends TypeReference[DataType.type]

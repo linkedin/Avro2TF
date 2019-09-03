@@ -23,7 +23,9 @@ object FeatureIndicesConversion {
   val logger: Logger = LoggerFactory.getLogger(this.getClass)
 
   /**
-   * The main function to perform Feature indices conversion job
+   * The main function to perform Feature indices conversion job.
+   *
+   * Note: for any null columns, we will pad an entry with the max or last index
    *
    * @param dataFrame Input data Spark DataFrame
    * @param params TensorizeIn parameters specified by user
@@ -44,9 +46,15 @@ object FeatureIndicesConversion {
           dataFrameSchema(columnName).dataType.isInstanceOf[StringType]) {
           if (outputTensorDataTypes(columnName) == DataType.int || outputTensorDataTypes(columnName) == DataType.long) {
             if (dataFrameSchema(columnName).dataType.isInstanceOf[StringType]) {
-              convertedColumns.append(convertStringToId(featureMapping)(dataFrame(columnName)).name(columnName))
+              convertedColumns
+                .append(
+                  convertStringToId(featureMapping, params.discardUnknownEntries)(dataFrame(columnName))
+                    .name(columnName))
             } else {
-              convertedColumns.append(convertStringSeqToIdSeq(featureMapping)(dataFrame(columnName)).name(columnName))
+              convertedColumns
+                .append(
+                  convertStringSeqToIdSeq(featureMapping, params.discardUnknownEntries)(dataFrame(columnName))
+                    .name(columnName))
             }
             convertedColumnNames.add(columnName)
           } else {
@@ -58,9 +66,13 @@ object FeatureIndicesConversion {
           }
         } else if (CommonUtils.isArrayOfNTV(dataFrameSchema(columnName).dataType)) {
           if (outputTensorSparsity(columnName)) {
-            convertedColumns.append(convertNTVToSparseVector(featureMapping)(dataFrame(columnName)).name(columnName))
+            convertedColumns.append(
+              convertNTVToSparseVector(featureMapping, params.discardUnknownEntries)(dataFrame(columnName))
+                .name(columnName))
           } else {
-            convertedColumns.append(convertNTVToDenseVector(featureMapping)(dataFrame(columnName)).name(columnName))
+            convertedColumns.append(
+              convertNTVToDenseVector(featureMapping, params.discardUnknownEntries)(dataFrame(columnName))
+                .name(columnName))
           }
           convertedColumnNames.add(columnName)
         } else {
@@ -108,13 +120,16 @@ object FeatureIndicesConversion {
    * Spark UDF function to convert a column of NTVs to a column of SparseVector
    *
    * @param featureMapping The mapping of name+term to id
+   * @param discardUnknownEntries Whether to discard unknown entries
    * @return A Spark udf
    */
-  private def convertNTVToSparseVector(featureMapping: Map[String, Long]): UserDefinedFunction = {
+  private def convertNTVToSparseVector(
+    featureMapping: Map[String, Long],
+    discardUnknownEntries: Boolean): UserDefinedFunction = {
 
     udf {
       ntvs: Seq[Row] => {
-        val idValues = convertNTVToIdValues(ntvs, featureMapping)
+        val idValues = convertNTVToIdValues(ntvs, featureMapping, discardUnknownEntries)
         TensorizeIn.SparseVector(idValues.map(_.id), idValues.map(_.value))
       }
     }
@@ -126,12 +141,15 @@ object FeatureIndicesConversion {
    * @param featureMapping The mapping of name+term to id
    * @return A Spark udf
    */
-  private def convertNTVToDenseVector(featureMapping: Map[String, Long]): UserDefinedFunction = {
+  private def convertNTVToDenseVector(
+    featureMapping: Map[String, Long],
+    discardUnknownEntries: Boolean): UserDefinedFunction = {
 
     udf {
       ntvs: Seq[Row] => {
-        val idValues = convertNTVToIdValues(ntvs, featureMapping)
-        CommonUtils.idValuesToDense(idValues, featureMapping.size + 1)
+        val idValues = convertNTVToIdValues(ntvs, featureMapping, discardUnknownEntries)
+        val cardinality = if (discardUnknownEntries) featureMapping.size else featureMapping.size + 1
+        CommonUtils.idValuesToDense(idValues, cardinality)
       }
     }
   }
@@ -140,18 +158,24 @@ object FeatureIndicesConversion {
    *
    * @param ntvs A seq of NTV in Row type
    * @param featureMapping The mapping of name+term to id
+   * @param discardUnknownEntries Whether to discard unknown entries
    * @return A seq of IdValue
    */
-  private def convertNTVToIdValues(ntvs: Seq[Row], featureMapping: Map[String, Long]): Seq[TensorizeIn.IdValue] = {
+  private def convertNTVToIdValues(
+    ntvs: Seq[Row],
+    featureMapping: Map[String, Long],
+    discardUnknownEntries: Boolean): Seq[TensorizeIn.IdValue] = {
 
     // The number of unique name-term combinations
     val cardinality = featureMapping.size.toLong
+    val lastIndex = if (discardUnknownEntries) cardinality - 1 else cardinality
+    val paddingEntry = TensorizeIn.IdValue(lastIndex, 0)
     if (ntvs == null || ntvs.isEmpty) {
       // if bag is empty put a dummy one with id as the unknown Id (last id) = cardinality
-      Seq(TensorizeIn.IdValue(cardinality, 0))
+      Seq(paddingEntry)
     } else {
       val idValuesBuffer = new mutable.ArrayBuffer[TensorizeIn.IdValue]
-      val unknownIdValue = TensorizeIn.IdValue(cardinality, 1)
+      val unknownIdValue = TensorizeIn.IdValue(lastIndex, 1)
       var hasUnknownId = false
 
       ntvs.foreach {
@@ -159,19 +183,22 @@ object FeatureIndicesConversion {
           val name = ntv.getAs[String](NTV_NAME)
           val term = ntv.getAs[String](NTV_TERM)
           val value = CommonUtils.convertValueOfNTVToFloat(ntv)
-          val id = featureMapping.getOrElse(s"$name,$term", cardinality)
+          val id = featureMapping.getOrElse(s"$name,$term", lastIndex)
 
-          if (id == cardinality) {
-            hasUnknownId = true
-          } else {
+          if (featureMapping.contains(s"$name,$term")) {
             idValuesBuffer.append(TensorizeIn.IdValue(id, value))
+          } else {
+            hasUnknownId = true
           }
         }
       }
 
       // if multiple name+term are mapped to unknown id, we only keep one of them with value 1.0
-      if (hasUnknownId) {
+      if (!discardUnknownEntries && hasUnknownId) {
         idValuesBuffer.append(unknownIdValue)
+      }
+      if (idValuesBuffer.isEmpty) {
+        idValuesBuffer.append(paddingEntry)
       }
       idValuesBuffer
     }
@@ -181,18 +208,27 @@ object FeatureIndicesConversion {
    * Spark UDF function to convert a column of String Seq to a column of Id Seq
    *
    * @param featureMapping The mapping of word to id
+   * @param discardUnknownEntries Whether to discard unknown entries
    * @return A Spark udf
    */
-  private def convertStringSeqToIdSeq(featureMapping: Map[String, Long]): UserDefinedFunction = {
+  private def convertStringSeqToIdSeq(
+    featureMapping: Map[String, Long],
+    discardUnknownEntries: Boolean): UserDefinedFunction = {
 
     udf {
       stringSeq: Seq[String] => {
-        val cardinality = featureMapping.size.toLong
+        val lastIndex = if (discardUnknownEntries) featureMapping.size.toLong - 1 else featureMapping.size.toLong
 
         if (stringSeq == null || stringSeq.isEmpty) {
-          Seq(cardinality)
+          Seq(lastIndex)
         } else {
-          stringSeq.map(word => featureMapping.getOrElse(word, cardinality))
+          val ids = stringSeq.filter(x => discardUnknownEntries && !featureMapping.contains(x))
+            .map(word => featureMapping.getOrElse(word, lastIndex))
+          if (ids.isEmpty) {
+            Seq(lastIndex)
+          } else {
+            ids
+          }
         }
       }
     }
@@ -202,18 +238,21 @@ object FeatureIndicesConversion {
    * Spark UDF function to map a String to an Id
    *
    * @param featureMapping The mapping of word to id
+   * @param discardUnknownEntries Whether to discard unknown entries
    * @return A Spark udf
    */
-  private def convertStringToId(featureMapping: Map[String, Long]): UserDefinedFunction = {
+  private def convertStringToId(
+    featureMapping: Map[String, Long],
+    discardUnknownEntries: Boolean): UserDefinedFunction = {
 
     udf {
       stringValue: String => {
-        val cardinality = featureMapping.size.toLong
+        val lastIndex = if (discardUnknownEntries) featureMapping.size.toLong - 1 else featureMapping.size.toLong
 
         if (stringValue == null) {
-          cardinality
+          lastIndex
         } else {
-          featureMapping.getOrElse(stringValue, cardinality)
+          featureMapping.getOrElse(stringValue, lastIndex)
         }
       }
     }

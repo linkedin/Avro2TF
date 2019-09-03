@@ -9,6 +9,7 @@ import com.linkedin.avro2tf.configs.DataType
 object ConstantsForTest {
 
   final val AVRO_RECORD = "avro"
+  final val DISCARD_UNKNOWN_ENTRIES_NAME = "--discard-unknown-entries"
   final val ENABLE_APPEND = false
   final val ENABLE_CACHE_VALUE = "false"
   final val ENABLE_RECURSIVE = true

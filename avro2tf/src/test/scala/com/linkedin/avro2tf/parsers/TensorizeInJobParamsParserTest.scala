@@ -272,7 +272,8 @@ class TensorizeInJobParamsParserTest {
       tensorsSharingFeatureLists = Array[Array[String]](),
       numPartitions = 100,
       partitionFieldName = "",
-      termOnlyFeatureList = false
+      termOnlyFeatureList = false,
+      discardUnknownEntries = false
     )
   }
 
