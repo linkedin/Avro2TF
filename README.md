@@ -39,7 +39,7 @@ repositories {
 2. Declare Avro2TF dependency
 ```
 dependencies {
-    compile 'com.linkedin.avro2tf:avro2tf:0.1.0'
+    compile 'com.linkedin.avro2tf:avro2tf:1.0.1'
 }
 ```
 
