@@ -62,8 +62,7 @@ Arrays of primitive types with any rank are supported.
 
 ### Supported Data Types of Output Tensor
 In Avro2TF, the supported data types (dtype) of output tensors are: int, long, float, double, string, boolean, bytes.
-We also provide a special data type: sparseVector to represent categorical/sparse features.
-A sparseVector tensor type has two fields: indices and values.
+A sparseVector tensor has two fields: indices and values.
 
 In the below table, we list the corresponding data types after loading the serialized tensors in Avro2TF to TensorFlow.
 In TensorFlow, bytes is represented using tf.string and users can later decode it to images, audios, etc.
@@ -99,7 +98,7 @@ The below table shows all the available configuration names and their detailed e
 | outputTensorInfo   | yes       | /                                          | Info on expected output tensor.                                                                                                                                                    |
 | name               | yes       | /                                          | Name of output tensor.                                                                                                                                                             |
 | dtype              | yes       | /                                          | The expected dtype of output tensor.                                                                                                                                               |
-| shape              | no        | []                                         | The expected shape of output tensor, examples: []: scalar; sparse vector; [-1] : 1D array of any length; [6]: 1D array with size 6; [2, 3]: matrix with 2 rows and 3 columns.      |
+| shape              | no        | []                                         | The expected shape of output tensor, examples: []: scalar; [-1] : 1D array of any length; [6]: 1D array with size 6; [2, 3]: matrix with 2 rows and 3 columns.      |
 | isSparse           | no        | false                                      | To indicate whether the output tensor is sparse tensor.
 #### Avro2TF Config Example
 
