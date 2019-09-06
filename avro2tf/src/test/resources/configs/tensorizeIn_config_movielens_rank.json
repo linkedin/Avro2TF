@@ -27,7 +27,8 @@
         "dtype": "int",
         "shape": [
           4
-        ]
+        ],
+        "isDocumentFeature": false
       }
     },
     {

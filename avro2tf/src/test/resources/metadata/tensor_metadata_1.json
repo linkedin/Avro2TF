@@ -4,25 +4,29 @@
     "dtype" : "float",
     "shape" : [ 475 ],
     "cardinality" : null,
-    "isSparse" : true
+    "isSparse" : true,
+    "isDocumentFeature": true
   }, {
     "name" : "memberFeatures_currentSkillIds",
     "dtype" : "float",
     "shape" : [ 1000 ],
     "cardinality" : null,
-    "isSparse" : true
+    "isSparse" : true,
+    "isDocumentFeature": true
   }, {
     "name" : "multiHashedFeature",
     "dtype" : "long",
     "shape" : [ 3 ],
     "cardinality" : null,
-    "isSparse" : false
+    "isSparse" : false,
+    "isDocumentFeature": true
   }, {
     "name" : "timestamp",
     "dtype" : "long",
     "shape" : [ 3 ],
     "cardinality" : 1483382665524,
-    "isSparse" : false
+    "isSparse" : false,
+    "isDocumentFeature": true
   }, {
     "name" : "wideFeatures",
     "dtype" : "float",
@@ -35,6 +39,7 @@
     "dtype" : "int",
     "shape" : [ ],
     "cardinality" : null,
-    "isSparse" : false
+    "isSparse" : false,
+    "isDocumentFeature": true
   } ]
 }

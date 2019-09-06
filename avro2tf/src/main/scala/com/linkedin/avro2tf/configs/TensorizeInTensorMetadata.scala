@@ -24,5 +24,6 @@ case class TensorMetadata(
   dtype: DataType,
   shape: Seq[Int],
   cardinality: Option[Long],
-  isSparse: Boolean = false
+  isSparse: Boolean = false,
+  isDocumentFeature: Boolean = true
 )

@@ -111,7 +111,8 @@ case class OutputTensorInfo(
   name: String,
   @JsonScalaEnumeration(classOf[DataTypeRef]) dtype: DataType.DataType,
   shape: Seq[Int] = Seq(),
-  isSparse: Boolean = false) {
+  isSparse: Boolean = false,
+  isDocumentFeature: Boolean = true) {
 
   // Array is a Java array, so we need to implement equals
   override def equals(that: Any): Boolean =

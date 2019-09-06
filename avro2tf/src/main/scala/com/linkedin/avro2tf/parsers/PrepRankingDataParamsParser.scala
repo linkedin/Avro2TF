@@ -9,8 +9,6 @@ case class PrepRankingDataParams(
   outputMetadataPath: String,
   groupIdList: Seq[String],
   groupListMaxSize: Int,
-  contentFeatureList: Option[Seq[String]],
-  queryFeatureList: Option[Seq[String]],
   enableFilterZero: Boolean = false,
   dropColumns: Option[Seq[String]] = None,
   executionMode: TrainingMode.TrainingMode = TrainingMode.training,
@@ -73,39 +71,6 @@ object PrepRankingDataParamsParser {
       .text(
         """Required.
           |The maximum list length for each query.
-        """.stripMargin
-      )
-
-    opt[String]("content-feature-list")
-      .action{ (x, p) =>
-        val fList = x.split(",").map(_.trim)
-        if (fList.isEmpty) {
-          p.copy(contentFeatureList = None)
-        } else {
-          p.copy(contentFeatureList = Some(fList))
-        }
-      }
-      .optional()
-      .text(
-        """Optional.
-          |The content feature list separated by comma. If not provided, all the features are considered
-          |as content features.
-        """.stripMargin
-      )
-
-    opt[String]("query-feature-list")
-      .action{ (x, p) =>
-        val fList = x.split(",").map(_.trim)
-        if (fList.isEmpty) {
-          p.copy(queryFeatureList = None)
-        } else {
-          p.copy(queryFeatureList = Some(fList))
-        }
-      }
-      .optional()
-      .text(
-        """Optional.
-          |The query feature list separated by comma.
         """.stripMargin
       )
 
@@ -192,9 +157,7 @@ object PrepRankingDataParamsParser {
         outputDataPath = "",
         outputMetadataPath = "",
         groupIdList = Seq.empty,
-        groupListMaxSize = 0,
-        contentFeatureList = None,
-        queryFeatureList = None
+        groupListMaxSize = 0
       )
     ) match {
       case Some(params) => params

@@ -7,7 +7,8 @@
       "outputTensorInfo": {
         "name": "firstWord",
         "dtype": "long",
-        "shape": []
+        "shape": [],
+        "isDocumentFeature": true
       }
     },
     {

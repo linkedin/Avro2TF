@@ -100,6 +100,7 @@ The below table shows all the available configuration names and their detailed e
 | dtype              | yes       | /                                          | The expected dtype of output tensor.                                                                                                                                               |
 | shape              | no        | []                                         | The expected shape of output tensor, examples: []: scalar; [-1] : 1D array of any length; [6]: 1D array with size 6; [2, 3]: matrix with 2 rows and 3 columns.      |
 | isSparse           | no        | false                                      | To indicate whether the output tensor is sparse tensor.
+| isDocumentFeature  | no        | true                                       | To indicate whether the output tensor is a document feature or query feature.
 #### Avro2TF Config Example
 
 Suppose your input data has the following schema

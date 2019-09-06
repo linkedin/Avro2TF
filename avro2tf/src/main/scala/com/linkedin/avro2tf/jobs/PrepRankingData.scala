@@ -1,20 +1,21 @@
 package com.linkedin.avro2tf.jobs
 
 import scala.collection.mutable
+
 import com.databricks.spark.avro._
 import com.linkedin.avro2tf.configs.TensorMetadata
 import com.linkedin.avro2tf.helpers.TensorizeInJobHelper
 import com.linkedin.avro2tf.jobs.TensorizeIn.SparseVector
 import com.linkedin.avro2tf.parsers.{PrepRankingDataParams, PrepRankingDataParamsParser}
 import com.linkedin.avro2tf.utils._
-import org.apache.spark.sql.types.{DoubleType, FloatType, IntegerType, LongType, StructType, DataType => ADataType}
+import io.circe.generic.auto._
+import io.circe.parser.{decode => jsondecode}
+import io.circe.syntax._
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.sql._
 import org.apache.spark.sql.functions._
+import org.apache.spark.sql.types.{DoubleType, FloatType, IntegerType, LongType, StructType, DataType => ADataType}
 import org.slf4j.{Logger, LoggerFactory}
-import io.circe.generic.auto._
-import io.circe.syntax._
-import io.circe.parser.{decode => jsondecode}
 
 /**
  * Prepare ranking tensor data after TensorizeIn job.
@@ -82,26 +83,24 @@ object PrepRankingData {
 
     // three types of columns: qid column, content features columns, query feature columns
     val groupIdCols = params.groupIdList.map(col)
-    val queryFeatures = params.queryFeatureList.getOrElse(Seq.empty)
+    val (documentFeaturesMetadata, queryFeaturesMetadata) = (metadata(Constants.FEATURES) ++ metadata(Constants.LABELS))
+      .partition(_.isDocumentFeature)
+    val queryFeatures = queryFeaturesMetadata.map(_.name)
     logger.info(s"Query feature list: ${queryFeatures.mkString(", ")}.")
 
     val label = metadata(Constants.LABELS).head.name
     logger.info(s"Label field: $label.")
 
-    val contentFeatures = (params.contentFeatureList match {
-      case Some(x) => x :+ label
-      case None => df.columns.toSeq
-    }).filter(x => !params.groupIdList.contains(x) && !queryFeatures.contains(x))
+    val documentFeatures = documentFeaturesMetadata.map(_.name).filter(x => !params.groupIdList.contains(x))
+    logger.info(s"Content feature list: ${documentFeatures.mkString(", ")}.")
 
-    logger.info(s"Content feature list: ${contentFeatures.mkString(", ")}.")
-
-    val selectedColumnNames = (contentFeatures ++ queryFeatures).distinct.map(col)
+    val selectedColumnNames = (documentFeatures ++ queryFeatures).distinct.map(col)
     val selectDf = df.select(groupIdCols ++ selectedColumnNames: _*)
 
     // group by qid
     // content features - collect_list
     // query features - first row
-    val aggExpr = contentFeatures.map(x => collect_list(col(x)).alias(x)) ++
+    val aggExpr = documentFeatures.map(x => collect_list(col(x)).alias(x)) ++
       queryFeatures.map(x => first(col(x)).alias(x))
     val groupDf = selectDf
       .groupBy(groupIdCols: _*)
@@ -111,7 +110,7 @@ object PrepRankingData {
     // TODO: padding of the features if each group has different length
     // For sparse tensor variable length is acceptable but for dense tensor padding is needed.
     var truncateDf = groupDf
-    contentFeatures.foreach { it =>
+    documentFeatures.foreach { it =>
       val isLabel = it.equals(label)
       truncateDf = truncateDf
         .withColumn(
@@ -125,11 +124,11 @@ object PrepRankingData {
     }
 
     // flatten indices of sparse tensors
-    val contentFeaturesWithSpVec = contentFeatures.filter(
+    val documentFeaturesWithSpVec = documentFeatures.filter(
       it =>
         CommonUtils.isArrayOfSparseVector(truncateDf.schema(it).dataType))
 
-    contentFeaturesWithSpVec.foreach { it =>
+    documentFeaturesWithSpVec.foreach { it =>
       truncateDf = truncateDf.withColumn(it, flattenSparseVectorArray(col(it)))
     }
 
@@ -140,7 +139,7 @@ object PrepRankingData {
 
     // update tensor_metadata.json, need to happen after above avro data write
     if (params.executionMode == TrainingMode.training) {
-      updateMetadata(spark, params, contentFeatures, metadata)
+      updateMetadata(spark, params, documentFeatures, metadata)
     }
   }
 
@@ -149,13 +148,13 @@ object PrepRankingData {
    *
    * @param spark The spark session
    * @param params The job params
-   * @param contentFeatures The list of content features
+   * @param documentFeatures The list of content features
    * @param metadata The metadata
    */
   private def updateMetadata(
     spark: SparkSession,
     params: PrepRankingDataParams,
-    contentFeatures: Seq[String],
+    documentFeatures: Seq[String],
     metadata: Map[String, Seq[TensorMetadata]]
   ): Unit = {
     import com.linkedin.avro2tf.configs.JsonCodecs._
@@ -163,7 +162,7 @@ object PrepRankingData {
     // update shape information in tensor_metadata
     val updateMetadata = metadata.mapValues { tensorMetaDatas =>
       tensorMetaDatas.filter(x => !params.groupIdList.contains(x.name)).map { x =>
-        if (contentFeatures.contains(x.name)) {
+        if (documentFeatures.contains(x.name)) {
           x.copy(shape = Array(params.groupListMaxSize) ++ x.shape)
         } else {
           x
@@ -183,7 +182,7 @@ object PrepRankingData {
     IOUtils.writeContentToHDFS(
       fs,
       new Path(params.outputMetadataPath, Constants.CONTENT_FEATURE_LIST),
-      contentFeatures.mkString("\n"),
+      documentFeatures.mkString("\n"),
       overwrite = true
     )
   }

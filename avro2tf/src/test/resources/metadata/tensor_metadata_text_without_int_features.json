@@ -4,19 +4,22 @@
     "dtype" : "long",
     "shape" : [ -1 ],
     "cardinality" : 4,
-    "isSparse" : false
+    "isSparse" : false,
+    "isDocumentFeature": true
   }, {
     "name" : "words_wideFeatures",
     "dtype" : "float",
     "shape" : [ 100 ],
     "cardinality" : null,
-    "isSparse" : true
+    "isSparse" : true,
+    "isDocumentFeature": true
   } ],
   "labels" : [ {
     "name" : "words_wideFeatures_response",
     "dtype" : "float",
     "shape" : [ 100 ],
     "cardinality" : null,
-    "isSparse" : true
+    "isSparse" : true,
+    "isDocumentFeature": true
   } ]
 }

@@ -5,6 +5,7 @@ import scala.util.Try
 
 import cats.data.NonEmptyList
 import com.linkedin.avro2tf.configs._
+import com.linkedin.avro2tf.utils.Constants
 import com.typesafe.config.ConfigFactory
 import io.circe
 import io.circe.Errors
@@ -27,9 +28,9 @@ object TensorizeInConfigParser {
 
     val rawConfig = ConfigFactory.parseString(configString)
 
-    val featureConfig = rawConfig.getConfigList("features").asScala.map(_.as[Feature])
+    val featureConfig = rawConfig.getConfigList(Constants.FEATURES).asScala.map(_.as[Feature])
     // label field is optional, so wrap it in a Try first
-    val labelConfig = Try(rawConfig.getConfigList("labels")).map(_.asScala.map(_.as[Feature])).toOption
+    val labelConfig = Try(rawConfig.getConfigList(Constants.LABELS)).map(_.asScala.map(_.as[Feature])).toOption
 
     // check that we parsed the features correctly
     val errorList: Option[NonEmptyList[circe.Error]] = NonEmptyList.fromList(
