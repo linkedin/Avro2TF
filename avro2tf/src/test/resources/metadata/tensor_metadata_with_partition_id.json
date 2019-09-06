@@ -4,55 +4,64 @@
     "dtype" : "float",
     "shape" : [ 7 ],
     "cardinality" : null,
-    "isSparse" : true
+    "isSparse" : true,
+    "isDocumentFeature": true
   }, {
     "name" : "fruits_day2",
     "dtype" : "float",
     "shape" : [ 5 ],
     "cardinality" : null,
-    "isSparse" : true
+    "isSparse" : true,
+    "isDocumentFeature": true
   }, {
     "name" : "fruits_day3",
     "dtype" : "float",
     "shape" : [ 4 ],
     "cardinality" : null,
-    "isSparse" : true
+    "isSparse" : true,
+    "isDocumentFeature": true
   }, {
     "name" : "fruits_day4",
     "dtype" : "float",
     "shape" : [ 6 ],
     "cardinality" : null,
-    "isSparse" : true
+    "isSparse" : true,
+    "isDocumentFeature": true
   }, {
     "name" : "comments_before",
     "dtype" : "long",
     "shape" : [ -1 ],
     "cardinality" : 13,
-    "isSparse" : false
+    "isSparse" : false,
+    "isDocumentFeature": true
   }, {
     "name" : "send_platform",
     "dtype" : "long",
     "shape" : [ ],
     "cardinality" : 4,
-    "isSparse" : false
+    "isSparse" : false,
+    "isDocumentFeature": true
   }, {
     "name" : "receive_platform",
     "dtype" : "long",
     "shape" : [ ],
     "cardinality" : 4,
-    "isSparse" : false
+    "isSparse" : false,
+    "isDocumentFeature": true
   }, {
     "name" : "partitionId",
     "dtype" : "int",
     "shape" : [ ],
     "cardinality" : 100,
-    "isSparse" : false
+    "isSparse" : false,
+    "isDocumentFeature": true
   } ],
   "labels" : [ {
     "name" : "comments_after",
     "dtype" : "long",
     "shape" : [ -1 ],
     "cardinality" : 11,
-    "isSparse" : false
+    "isSparse" : false,
+    "isDocumentFeature": true
   } ]
 }

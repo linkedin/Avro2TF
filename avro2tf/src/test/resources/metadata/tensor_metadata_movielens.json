@@ -4,49 +4,57 @@
     "dtype" : "long",
     "shape" : [ -1 ],
     "cardinality" : 138493,
-    "isSparse" : false
+    "isSparse" : false,
+    "isDocumentFeature": true
   }, {
     "name" : "movieId_hashed",
     "dtype" : "long",
     "shape" : [ 4 ],
     "cardinality" : 1000,
-    "isSparse" : false
+    "isSparse" : false,
+    "isDocumentFeature": true
   }, {
     "name" : "genreFeatures",
     "dtype" : "float",
     "shape" : [ 21 ],
     "cardinality" : null,
-    "isSparse" : true
+    "isSparse" : true,
+    "isDocumentFeature": true
   }, {
     "name" : "genreFeatures_term",
     "dtype" : "long",
     "shape" : [ -1 ],
     "cardinality" : 4,
-    "isSparse" : false,
+    "isSparse" : false,,
+    "isDocumentFeature": true
   }, {
     "name" : "genreFeatures_movieLatentFactorFeatures",
     "dtype" : "float",
     "shape" : [ 100 ],
     "cardinality" : null,
-    "isSparse" : true
+    "isSparse" : true,
+    "isDocumentFeature": true
   } ],
   "labels" : [ {
     "name" : "response",
     "dtype" : "double",
     "shape" : [ ],
     "cardinality" : null,
-    "isSparse" : false
+    "isSparse" : false,
+    "isDocumentFeature": true
   }, {
     "name" : "movieId_hashed_response",
     "dtype" : "long",
     "shape" : [ 4 ],
     "cardinality" : 1000,
-    "isSparse" : false
+    "isSparse" : false,
+    "isDocumentFeature": true
   }, {
     "name" : "genreFeatures_movieLatentFactorFeatures_response",
     "dtype" : "float",
     "shape" : [ 100 ],
     "cardinality" : null,
-    "isSparse" : true
+    "isSparse" : true,
+    "isDocumentFeature": true
   } ]
 }

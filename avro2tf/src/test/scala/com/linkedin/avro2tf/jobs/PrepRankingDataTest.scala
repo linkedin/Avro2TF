@@ -41,7 +41,6 @@ class PrepRankingDataTest extends WithLocalSparkSession {
       "--output-data-path", dataOutputPath,
       "--output-metadata-path", metadataOutputPath,
       "--group-id-list", "userId",
-      "--query-feature-list", "movieId_hashed",
       "--group-list-max-size", "2",
       "--execution-mode", "training",
       "--num-output-files", "1"

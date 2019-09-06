@@ -189,7 +189,8 @@ object TensorMetadataGeneration {
           dtype = featureOrLabel.outputTensorInfo.dtype,
           shape = shape,
           cardinality = if (ntvColumns.contains(featureOrLabel.outputTensorInfo.name)) None else cardinality,
-          isSparse = featureOrLabel.outputTensorInfo.isSparse)
+          isSparse = featureOrLabel.outputTensorInfo.isSparse,
+          isDocumentFeature = featureOrLabel.outputTensorInfo.isDocumentFeature)
     }
   }
 }

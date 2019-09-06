@@ -4,61 +4,71 @@
     "dtype" : "long",
     "shape" : [ ],
     "cardinality" : 6,
-    "isSparse" : false
+    "isSparse" : false,
+    "isDocumentFeature": true
   }, {
     "name" : "wordSeq",
     "dtype" : "long",
     "shape" : [ -1 ],
     "cardinality" : 402,
-    "isSparse" : false
+    "isSparse" : false,
+    "isDocumentFeature": true
   }, {
     "name" : "wordSeq_hashed",
     "dtype" : "long",
     "shape" : [ 4 ],
     "cardinality" : 1000,
-    "isSparse" : false
+    "isSparse" : false,
+    "isDocumentFeature": true
   }, {
     "name" : "words_term",
     "dtype" : "long",
     "shape" : [ -1 ],
     "cardinality" : 4,
-    "isSparse" : false
+    "isSparse" : false,
+    "isDocumentFeature": true
   }, {
     "name" : "words_wideFeatures_sparse",
     "dtype" : "float",
     "shape" : [ 398 ],
     "cardinality" : null,
-    "isSparse" : true
+    "isSparse" : true,
+    "isDocumentFeature": true
   }, {
     "name" : "words_wideFeatures_dense",
     "dtype" : "float",
     "shape" : [ 398 ],
     "cardinality" : null,
-    "isSparse" : false
+    "isSparse" : false,
+    "isDocumentFeature": true
   }, {
     "name" : "words_wideFeatures_hash",
     "dtype" : "float",
     "shape" : [ 100 ],
     "cardinality" : null,
-    "isSparse" : true
+    "isSparse" : true,
+    "isDocumentFeature": true
   } ],
   "labels" : [ {
     "name" : "response",
     "dtype" : "int",
     "shape" : [ ],
     "cardinality" : 1,
-    "isSparse" : false
+    "isSparse" : false,
+    "isDocumentFeature": true
   }, {
     "name" : "wordSeq_response",
     "dtype" : "long",
     "shape" : [ -1 ],
     "cardinality" : 6,
-    "isSparse" : false
+    "isSparse" : false,
+    "isDocumentFeature": true
   }, {
     "name" : "words_wideFeatures_response",
     "dtype" : "float",
     "shape" : [ 100 ],
     "cardinality" : null,
-    "isSparse" : true
+    "isSparse" : true,
+    "isDocumentFeature": true
   } ]
 }
