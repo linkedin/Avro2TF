@@ -1,5 +1,6 @@
 package com.linkedin.avro2tf.configs
 
+import com.fasterxml.jackson.module.scala.JsonScalaEnumeration
 import com.linkedin.avro2tf.configs.DataType.DataType
 
 /**
@@ -21,7 +22,7 @@ case class TensorizeInTensorMetadata(features: Seq[TensorMetadata], labels: Seq[
  */
 case class TensorMetadata(
   name: String,
-  dtype: DataType,
+  @JsonScalaEnumeration(classOf[DataTypeRef]) dtype: DataType,
   shape: Seq[Int],
   cardinality: Option[Long],
   isSparse: Boolean = false,
