@@ -4,7 +4,7 @@ import org.testng.annotations.Test
 
 import org.testng.Assert._
 
-class TensorizeInConfigTest {
+class Avro2TFConfigTest {
   @Test
   def testEquality(): Unit = {
     val array1 = Array(1)

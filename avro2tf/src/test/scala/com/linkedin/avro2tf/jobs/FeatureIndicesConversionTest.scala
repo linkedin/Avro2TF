@@ -3,11 +3,11 @@ package com.linkedin.avro2tf.jobs
 import java.io.File
 
 import com.databricks.spark.avro._
-import com.linkedin.avro2tf.helpers.TensorizeInJobHelper
-import com.linkedin.avro2tf.parsers.TensorizeInJobParamsParser
+import com.linkedin.avro2tf.constants.Avro2TFJobParamNames
+import com.linkedin.avro2tf.helpers.Avro2TFJobHelper
+import com.linkedin.avro2tf.parsers.Avro2TFJobParamsParser
 import com.linkedin.avro2tf.utils.ConstantsForTest._
 import com.linkedin.avro2tf.utils.{CommonUtils, TestUtil, WithLocalSparkSession}
-
 import org.apache.commons.io.FileUtils
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.Row
@@ -35,31 +35,35 @@ class FeatureIndicesConversionTest extends WithLocalSparkSession {
   @Test(dataProvider = "testData")
   def testConversion(outputFormat: String, discardUnknownEntries: Boolean): Unit = {
 
-    val tensorizeInConfig = new File(
-      getClass.getClassLoader.getResource(TENSORIZEIN_CONFIG_PATH_VALUE_SAMPLE).getFile
+    val avro2TFConfig = new File(
+      getClass.getClassLoader.getResource(AVRO2TF_CONFIG_PATH_VALUE_SAMPLE).getFile
     ).getAbsolutePath
     FileUtils.deleteDirectory(new File(WORKING_DIRECTORY_INDICES_CONVERSION))
 
-    val params = Seq(
-      INPUT_PATHS_NAME, INPUT_TEXT_FILE_PATHS,
-      WORKING_DIRECTORY_NAME, WORKING_DIRECTORY_INDICES_CONVERSION,
-      TENSORIZEIN_CONFIG_PATH_NAME, tensorizeInConfig,
-      OUTPUT_FORMAT_NAME, outputFormat,
-      DISCARD_UNKNOWN_ENTRIES_NAME, discardUnknownEntries.toString
+    val params = Map(
+      Avro2TFJobParamNames.INPUT_PATHS -> INPUT_TEXT_FILE_PATHS,
+      Avro2TFJobParamNames.WORKING_DIR -> WORKING_DIRECTORY_INDICES_CONVERSION,
+      Avro2TFJobParamNames.AVRO2TF_CONFIG_PATH -> avro2TFConfig,
+      Avro2TFJobParamNames.OUTPUT_FORMAT -> outputFormat,
+      Avro2TFJobParamNames.DISCARD_UNKNOWN_ENTRIES -> discardUnknownEntries.toString
     )
     val dataFrame = session.read.avro(INPUT_TEXT_FILE_PATHS)
-    val tensorizeInParams = if (outputFormat == TF_RECORD) {
-      TensorizeInJobParamsParser.parse(params)
+    val avro2TFParams = if (outputFormat == TF_RECORD) {
+      Avro2TFJobParamsParser.parse(TestUtil.convertParamMapToParamList(params))
     } else {
-      TensorizeInJobParamsParser.parse(params ++ Seq(EXTRA_COLUMNS_TO_KEEP_NAME, EXTRA_COLUMNS_TO_KEEP_VALUE))
+      Avro2TFJobParamsParser.parse(
+        TestUtil.convertParamMapToParamList(
+          params ++ Map(Avro2TFJobParamNames.EXTRA_COLUMNS_TO_KEEP -> EXTRA_COLUMNS_TO_KEEP_VALUE)
+        )
+      )
     }
 
-    val dataFrameExtracted = FeatureExtraction.run(dataFrame, tensorizeInParams)
-    val dataFrameTransformed = FeatureTransformation.run(dataFrameExtracted, tensorizeInParams)
-    FeatureListGeneration.run(dataFrameTransformed, tensorizeInParams)
-    val convertedDataFrame = FeatureIndicesConversion.run(dataFrameTransformed, tensorizeInParams)
+    val dataFrameExtracted = FeatureExtraction.run(dataFrame, avro2TFParams)
+    val dataFrameTransformed = FeatureTransformation.run(dataFrameExtracted, avro2TFParams)
+    FeatureListGeneration.run(dataFrameTransformed, avro2TFParams)
+    val convertedDataFrame = FeatureIndicesConversion.run(dataFrameTransformed, avro2TFParams)
 
-    TestUtil.checkOutputColumns(convertedDataFrame, tensorizeInParams)
+    TestUtil.checkOutputColumns(convertedDataFrame, avro2TFParams)
 
     // check if the type of "wordSeq" column is the expected Seq[Long]
     val convertedTextColummType = convertedDataFrame.schema(FEATURE_WORD_SEQ_COL_NAME).dataType
@@ -89,7 +93,7 @@ class FeatureIndicesConversionTest extends WithLocalSparkSession {
       }
     }
 
-    TensorizeInJobHelper.saveDataToHDFS(convertedDataFrame, tensorizeInParams)
-    assertTrue(new File(s"${tensorizeInParams.workingDir.trainingDataPath}/_SUCCESS").exists())
+    Avro2TFJobHelper.saveDataToHDFS(convertedDataFrame, avro2TFParams)
+    assertTrue(new File(s"${avro2TFParams.workingDir.trainingDataPath}/_SUCCESS").exists())
   }
 }

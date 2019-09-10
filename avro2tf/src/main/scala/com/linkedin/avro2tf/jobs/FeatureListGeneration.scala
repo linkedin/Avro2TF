@@ -5,10 +5,10 @@ import java.nio.charset.StandardCharsets.UTF_8
 
 import scala.collection.mutable
 
-import com.linkedin.avro2tf.helpers.TensorizeInConfigHelper
-import com.linkedin.avro2tf.parsers.TensorizeInParams
+import com.linkedin.avro2tf.helpers.Avro2TFConfigHelper
+import com.linkedin.avro2tf.parsers.Avro2TFParams
 import com.linkedin.avro2tf.utils.CommonUtils
-import com.linkedin.avro2tf.utils.Constants._
+import com.linkedin.avro2tf.constants.Constants._
 
 import org.apache.hadoop.fs.{FileSystem, FileUtil, Path}
 import org.apache.spark.sql.functions.{col, concat_ws}
@@ -25,9 +25,9 @@ object FeatureListGeneration {
    * The main function to perform Feature List Generation job
    *
    * @param dataFrame Input data Spark DataFrame
-   * @param params TensorizeIn parameters specified by user
+   * @param params Avro2TF parameters specified by user
    */
-  def run(dataFrame: DataFrame, params: TensorizeInParams): Unit = {
+  def run(dataFrame: DataFrame, params: Avro2TFParams): Unit = {
 
     val fileSystem = FileSystem.get(dataFrame.sparkSession.sparkContext.hadoopConfiguration)
 
@@ -36,10 +36,10 @@ object FeatureListGeneration {
     fileSystem.delete(featureListPath, ENABLE_RECURSIVE)
     fileSystem.mkdirs(featureListPath)
 
-    // Only collect those without external feature list and hash information specified in TensorizeIn configuration
-    val colsToCollectFeatureList = TensorizeInConfigHelper.concatFeaturesAndLabels(params)
+    // Only collect those without external feature list and hash information specified in Avro2TF configuration
+    val colsToCollectFeatureList = Avro2TFConfigHelper.concatFeaturesAndLabels(params)
       .map(featureOrLabel => featureOrLabel.outputTensorInfo.name) diff
-      (processExternalFeatureList(params, fileSystem) ++ TensorizeInConfigHelper.getColsWithHashInfo(params))
+      (processExternalFeatureList(params, fileSystem) ++ Avro2TFConfigHelper.getColsWithHashInfo(params))
 
     // Make sure tensors with feature list sharing settings all exist in colsToCollectFeatureList
     if (!params.tensorsSharingFeatureLists.isEmpty) {
@@ -67,15 +67,15 @@ object FeatureListGeneration {
   /**
    * Process external feature lists by copying to working directory and collecting their column names
    *
-   * @param params TensorizeIn parameters specified by user
+   * @param params Avro2TF parameters specified by user
    * @param fileSystem A file system
    * @return A sequence of column names
    */
-  private def processExternalFeatureList(params: TensorizeInParams, fileSystem: FileSystem): Seq[String] = {
+  private def processExternalFeatureList(params: Avro2TFParams, fileSystem: FileSystem): Seq[String] = {
 
     if (!params.externalFeaturesListPath.isEmpty) {
       val colsWithExternalFeatureList = new mutable.HashSet[String]
-      val colsWithHashInfo = TensorizeInConfigHelper.getColsWithHashInfo(params)
+      val colsWithHashInfo = Avro2TFConfigHelper.getColsWithHashInfo(params)
 
       // Get list statuses and block locations of the external feature list files from the given path
       val externalFeatureListFiles = fileSystem.listFiles(new Path(params.externalFeaturesListPath), ENABLE_RECURSIVE)
@@ -89,9 +89,9 @@ object FeatureListGeneration {
         val columnName = sourcePath.getName
 
         // In case user does not specify a right external feature list which they want to use
-        if (!TensorizeInConfigHelper.concatFeaturesAndLabels(params)
+        if (!Avro2TFConfigHelper.concatFeaturesAndLabels(params)
           .map(featureOrLabel => featureOrLabel.outputTensorInfo.name).contains(columnName)) {
-          throw new IllegalArgumentException(s"External feature list $columnName does not exist in user specified TensorizeIn output tensor names.")
+          throw new IllegalArgumentException(s"External feature list $columnName does not exist in user specified Avro2TF output tensor names.")
         }
 
         // Exclude external feature list of columns with hash information
@@ -137,14 +137,14 @@ object FeatureListGeneration {
    * Collect and save feature list
    *
    * @param dataFrame Input data Spark DataFrame
-   * @param params TensorizeIn parameters specified by user
+   * @param params Avro2TF parameters specified by user
    * @param fileSystem A file system
    * @param colsToCollectFeatureList A sequence of columns to collect feature lists
    * @return A set of output tensor names for NTV tensors
    */
   private def collectAndSaveFeatureList(
     dataFrame: DataFrame,
-    params: TensorizeInParams,
+    params: Avro2TFParams,
     fileSystem: FileSystem,
     colsToCollectFeatureList: Seq[String]): Unit = {
 
@@ -152,7 +152,7 @@ object FeatureListGeneration {
     val dataFrameSchema = dataFrame.schema
     val tmpFeatureListPath = s"${params.workingDir.rootPath}/$TMP_FEATURE_LIST"
     fileSystem.delete(new Path(tmpFeatureListPath), ENABLE_RECURSIVE)
-    val outputTensorDataTypes = TensorizeInConfigHelper.getOutputTensorDataTypes(params)
+    val outputTensorDataTypes = Avro2TFConfigHelper.getOutputTensorDataTypes(params)
 
     dataFrame.flatMap {
       row => {
@@ -162,7 +162,7 @@ object FeatureListGeneration {
               val ntvs = row.getAs[Seq[Row]](colName)
               if (ntvs != null) {
                 ntvs.map(
-                  ntv => TensorizeIn
+                  ntv => Avro2TF
                     .FeatureListEntry(colName, s"${ntv.getAs[String](NTV_NAME)},${ntv.getAs[String](NTV_TERM)}"))
               } else {
                 Seq.empty
@@ -172,7 +172,7 @@ object FeatureListGeneration {
               val columnNames = row.getAs[Seq[String]](colName)
 
               if (columnNames != null) {
-                columnNames.map(string => TensorizeIn.FeatureListEntry(colName, string))
+                columnNames.map(string => Avro2TF.FeatureListEntry(colName, string))
               } else {
                 Seq.empty
               }
@@ -181,7 +181,7 @@ object FeatureListGeneration {
               val columnName = row.getAs[String](colName)
 
               if (columnName != null) {
-                Seq(TensorizeIn.FeatureListEntry(colName, columnName))
+                Seq(Avro2TF.FeatureListEntry(colName, columnName))
               } else {
                 Seq.empty
               }
@@ -238,12 +238,12 @@ object FeatureListGeneration {
   /**
    * Get groups of tensor names for whom final feature lists should be written for.
    *
-   * @param params TensorizeIn parameters specified by user
+   * @param params Avro2TF parameters specified by user
    * @param fileSystem A file system
    * @return An array of string arrays. Each inner array is a group of tensor(s) that share the same feature list.
    **/
   private def getTensorGroupsToWriteFeatureLists(
-    params: TensorizeInParams,
+    params: Avro2TFParams,
     fileSystem: FileSystem): Array[Array[String]] = {
 
     // first get a set of tensor names for which temporary feature list files have been collected
@@ -266,11 +266,11 @@ object FeatureListGeneration {
   /**
    * Write feature list as text file to HDFS
    *
-   * @param params TensorizeIn parameters specified by user
+   * @param params Avro2TF parameters specified by user
    * @param fileSystem A file system
    */
   private def writeFeatureList(
-    params: TensorizeInParams,
+    params: Avro2TFParams,
     fileSystem: FileSystem,
     ntvTensors: Set[String]): Unit = {
 
@@ -350,13 +350,13 @@ object FeatureListGeneration {
   /**
    * Write term only feature list as text file to HDFS, will count the frequency of terms and output the sorted one
    *
-   * @param params TensorizeIn parameters specified by user
+   * @param params Avro2TF parameters specified by user
    * @param fileSystem A file system
    * @param ntvTensors A set of NTV tensor names
    * @param colsToCollectFeatureList The list of tensors that need to collect feature list
    */
   private def writeTermOnlyFeatureList(
-    params: TensorizeInParams,
+    params: Avro2TFParams,
     fileSystem: FileSystem,
     ntvTensors: Set[String],
     colsToCollectFeatureList: Seq[String]): Unit = {

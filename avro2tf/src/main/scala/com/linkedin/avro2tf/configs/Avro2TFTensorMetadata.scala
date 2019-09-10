@@ -4,12 +4,12 @@ import com.fasterxml.jackson.module.scala.JsonScalaEnumeration
 import com.linkedin.avro2tf.configs.DataType.DataType
 
 /**
- * Case class for the TensorizeIn tensor metadata
+ * Case class for the Avro2TF tensor metadata
  *
  * @param features Tensor metadata of a sequence of features
  * @param labels Tensor metadata of a sequence of labels
  */
-case class TensorizeInTensorMetadata(features: Seq[TensorMetadata], labels: Seq[TensorMetadata])
+case class Avro2TFTensorMetadata(features: Seq[TensorMetadata], labels: Seq[TensorMetadata])
 
 /**
  * Case class for the tensor metadata

@@ -6,10 +6,11 @@ import java.nio.charset.StandardCharsets.UTF_8
 import scala.collection.mutable
 
 import com.databricks.spark.avro._
-import com.linkedin.avro2tf.parsers.TensorizeInJobParamsParser
-import com.linkedin.avro2tf.utils.Constants.{HASH_INFO, NTV_NAME, NTV_TERM, NTV_VALUE, TMP_FEATURE_LIST}
+import com.linkedin.avro2tf.constants.{Avro2TFJobParamNames, Constants}
+import com.linkedin.avro2tf.parsers.Avro2TFJobParamsParser
+import com.linkedin.avro2tf.constants.Constants.{HASH_INFO, NTV_NAME, NTV_TERM, NTV_VALUE, TMP_FEATURE_LIST}
 import com.linkedin.avro2tf.utils.ConstantsForTest._
-import com.linkedin.avro2tf.utils.{Constants, WithLocalSparkSession}
+import com.linkedin.avro2tf.utils.{TestUtil, WithLocalSparkSession}
 import org.apache.commons.io.FileUtils
 import org.apache.hadoop.fs.{FileStatus, FileSystem, Path}
 import org.apache.spark.sql.types.{ArrayType, StringType, StructType}
@@ -25,8 +26,8 @@ class FeatureListGenerationTest extends WithLocalSparkSession {
   @Test
   def testFeatureList(): Unit = {
 
-    val tensorizeInConfig = new File(
-      getClass.getClassLoader.getResource(TENSORIZEIN_CONFIG_PATH_VALUE_SAMPLE).getFile
+    val avro2TFConfig = new File(
+      getClass.getClassLoader.getResource(AVRO2TF_CONFIG_PATH_VALUE_SAMPLE).getFile
     ).getAbsolutePath
     FileUtils.deleteDirectory(new File(WORKING_DIRECTORY_FEATURE_LIST_GENERATION_TEXT))
 
@@ -41,23 +42,23 @@ class FeatureListGenerationTest extends WithLocalSparkSession {
       close()
     }
 
-    val params = Array(
-      INPUT_PATHS_NAME, INPUT_TEXT_FILE_PATHS,
-      WORKING_DIRECTORY_NAME, WORKING_DIRECTORY_FEATURE_LIST_GENERATION_TEXT,
-      TENSORIZEIN_CONFIG_PATH_NAME, tensorizeInConfig,
-      EXTERNAL_FEATURE_LIST_PATH_NAME, externalFeatureListFullPath
+    val params = Map(
+      Avro2TFJobParamNames.INPUT_PATHS -> INPUT_TEXT_FILE_PATHS,
+      Avro2TFJobParamNames.WORKING_DIR -> WORKING_DIRECTORY_FEATURE_LIST_GENERATION_TEXT,
+      Avro2TFJobParamNames.AVRO2TF_CONFIG_PATH -> avro2TFConfig,
+      Avro2TFJobParamNames.EXTERNAL_FEATURE_LIST_PATH -> externalFeatureListFullPath
     )
 
     val dataFrame = session.read.avro(INPUT_TEXT_FILE_PATHS)
-    val tensorizeInParams = TensorizeInJobParamsParser.parse(params)
+    val avro2TFParams = Avro2TFJobParamsParser.parse(TestUtil.convertParamMapToParamList(params))
 
-    val dataFrameExtracted = FeatureExtraction.run(dataFrame, tensorizeInParams)
-    val dataFrameTransformed = FeatureTransformation.run(dataFrameExtracted, tensorizeInParams)
-    FeatureListGeneration.run(dataFrameTransformed, tensorizeInParams)
+    val dataFrameExtracted = FeatureExtraction.run(dataFrame, avro2TFParams)
+    val dataFrameTransformed = FeatureTransformation.run(dataFrameExtracted, avro2TFParams)
+    FeatureListGeneration.run(dataFrameTransformed, avro2TFParams)
 
     // Check if columns of String Array type and NTV struct type have feature lists generated
     val fileSystem = FileSystem.get(session.sparkContext.hadoopConfiguration)
-    val featureListPath = new Path(tensorizeInParams.workingDir.featureListPath)
+    val featureListPath = new Path(avro2TFParams.workingDir.featureListPath)
 
     val filesIterator = fileSystem.listFiles(featureListPath, ENABLE_RECURSIVE)
     val files = new mutable.HashSet[String]
@@ -66,7 +67,7 @@ class FeatureListGenerationTest extends WithLocalSparkSession {
     }
     fileSystem.close()
 
-    val colsNeedFeatureList = tensorizeInParams.tensorizeInConfig.features
+    val colsNeedFeatureList = avro2TFParams.avro2TFConfig.features
       .filter(
         feature => {
           val colName = feature.outputTensorInfo.name
@@ -119,8 +120,8 @@ class FeatureListGenerationTest extends WithLocalSparkSession {
   )
   def testConflictingFeatureListSharingSetting(tensors_sharing_feature_lists: String): Unit = {
 
-    val tensorizeInConfig = new File(
-      getClass.getClassLoader.getResource(TENSORIZEIN_CONFIG_PATH_VALUE_SAMPLE).getFile
+    val avro2TFConfig = new File(
+      getClass.getClassLoader.getResource(AVRO2TF_CONFIG_PATH_VALUE_SAMPLE).getFile
     ).getAbsolutePath
     FileUtils.deleteDirectory(new File(WORKING_DIRECTORY_FEATURE_LIST_GENERATION_TEXT))
 
@@ -135,20 +136,20 @@ class FeatureListGenerationTest extends WithLocalSparkSession {
       close()
     }
 
-    val params = Array(
-      INPUT_PATHS_NAME, INPUT_TEXT_FILE_PATHS,
-      WORKING_DIRECTORY_NAME, WORKING_DIRECTORY_FEATURE_LIST_GENERATION_TEXT,
-      TENSORIZEIN_CONFIG_PATH_NAME, tensorizeInConfig,
-      EXTERNAL_FEATURE_LIST_PATH_NAME, externalFeatureListFullPath,
-      TENSORS_SHARING_FEATURE_LISTS_NAME, tensors_sharing_feature_lists
+    val params = Map(
+      Avro2TFJobParamNames.INPUT_PATHS -> INPUT_TEXT_FILE_PATHS,
+      Avro2TFJobParamNames.WORKING_DIR -> WORKING_DIRECTORY_FEATURE_LIST_GENERATION_TEXT,
+      Avro2TFJobParamNames.AVRO2TF_CONFIG_PATH -> avro2TFConfig,
+      Avro2TFJobParamNames.EXTERNAL_FEATURE_LIST_PATH -> externalFeatureListFullPath,
+      Avro2TFJobParamNames.TENSORS_SHARING_FEATURE_LISTS -> tensors_sharing_feature_lists
     )
 
     val dataFrame = session.read.avro(INPUT_TEXT_FILE_PATHS)
-    val tensorizeInParams = TensorizeInJobParamsParser.parse(params)
+    val avro2TFParams = Avro2TFJobParamsParser.parse(TestUtil.convertParamMapToParamList(params))
 
-    val dataFrameExtracted = FeatureExtraction.run(dataFrame, tensorizeInParams)
-    val dataFrameTransformed = FeatureTransformation.run(dataFrameExtracted, tensorizeInParams)
-    FeatureListGeneration.run(dataFrameTransformed, tensorizeInParams)
+    val dataFrameExtracted = FeatureExtraction.run(dataFrame, avro2TFParams)
+    val dataFrameTransformed = FeatureTransformation.run(dataFrameExtracted, avro2TFParams)
+    FeatureListGeneration.run(dataFrameTransformed, avro2TFParams)
   }
 
   /**
@@ -159,27 +160,27 @@ class FeatureListGenerationTest extends WithLocalSparkSession {
   @Test()
   def testCollectAndSaveFeatureList(): Unit = {
 
-    val tensorizeInConfig = new File(
-      getClass.getClassLoader.getResource(TENSORIZEIN_CONFIG_PATH_VALUE_SHARE_FEATURE).getFile
+    val avro2TFConfig = new File(
+      getClass.getClassLoader.getResource(AVRO2TF_CONFIG_PATH_VALUE_SHARE_FEATURE).getFile
     ).getAbsolutePath
     FileUtils.deleteDirectory(new File(WORKING_DIRECTORY_FEATURE_LIST_GENERATION_TEXT))
 
-    val params = Array(
-      INPUT_PATHS_NAME, INPUT_SHARE_FEATURE_PATH,
-      WORKING_DIRECTORY_NAME, WORKING_DIRECTORY_FEATURE_LIST_GENERATION_TEXT,
-      TENSORIZEIN_CONFIG_PATH_NAME, tensorizeInConfig,
-      TENSORS_SHARING_FEATURE_LISTS_NAME, TENSORS_SHARING_FEATURE_LISTS_VALUE_CASE_1
+    val params = Map(
+      Avro2TFJobParamNames.INPUT_PATHS -> INPUT_SHARE_FEATURE_PATH,
+      Avro2TFJobParamNames.WORKING_DIR -> WORKING_DIRECTORY_FEATURE_LIST_GENERATION_TEXT,
+      Avro2TFJobParamNames.AVRO2TF_CONFIG_PATH -> avro2TFConfig,
+      Avro2TFJobParamNames.TENSORS_SHARING_FEATURE_LISTS -> TENSORS_SHARING_FEATURE_LISTS_VALUE_CASE_1
     )
 
     val dataFrame = session.read.avro(INPUT_SHARE_FEATURE_PATH)
-    val tensorizeInParams = TensorizeInJobParamsParser.parse(params)
+    val avro2TFParams = Avro2TFJobParamsParser.parse(TestUtil.convertParamMapToParamList(params))
 
-    val dataFrameExtracted = FeatureExtraction.run(dataFrame, tensorizeInParams)
-    FeatureListGeneration.run(dataFrameExtracted, tensorizeInParams)
+    val dataFrameExtracted = FeatureExtraction.run(dataFrame, avro2TFParams)
+    FeatureListGeneration.run(dataFrameExtracted, avro2TFParams)
 
     // Check if correct temporary feature lists are generated
     val fileSystem = FileSystem.get(session.sparkContext.hadoopConfiguration)
-    val tmpFeatureListPath = new Path(s"${tensorizeInParams.workingDir.rootPath}/$TMP_FEATURE_LIST")
+    val tmpFeatureListPath = new Path(s"${avro2TFParams.workingDir.rootPath}/$TMP_FEATURE_LIST")
 
     var actualTmpFeatureListDirs = Map[String, FileStatus]()
     val tmpFeatureListPathStatus = fileSystem.listStatus(tmpFeatureListPath)
@@ -242,27 +243,27 @@ class FeatureListGenerationTest extends WithLocalSparkSession {
     tensors_sharing_feature_lists: String,
     expected_feat_lists_dir: String): Unit = {
 
-    val tensorizeInConfig = new File(
-      getClass.getClassLoader.getResource(TENSORIZEIN_CONFIG_PATH_VALUE_SHARE_FEATURE).getFile
+    val avro2TFConfig = new File(
+      getClass.getClassLoader.getResource(AVRO2TF_CONFIG_PATH_VALUE_SHARE_FEATURE).getFile
     ).getAbsolutePath
     FileUtils.deleteDirectory(new File(WORKING_DIRECTORY_FEATURE_LIST_GENERATION_TEXT))
 
-    val params = Array(
-      INPUT_PATHS_NAME, INPUT_SHARE_FEATURE_PATH,
-      WORKING_DIRECTORY_NAME, WORKING_DIRECTORY_FEATURE_LIST_GENERATION_TEXT,
-      TENSORIZEIN_CONFIG_PATH_NAME, tensorizeInConfig,
-      TENSORS_SHARING_FEATURE_LISTS_NAME, tensors_sharing_feature_lists
+    val params = Map(
+      Avro2TFJobParamNames.INPUT_PATHS -> INPUT_SHARE_FEATURE_PATH,
+      Avro2TFJobParamNames.WORKING_DIR -> WORKING_DIRECTORY_FEATURE_LIST_GENERATION_TEXT,
+      Avro2TFJobParamNames.AVRO2TF_CONFIG_PATH -> avro2TFConfig,
+      Avro2TFJobParamNames.TENSORS_SHARING_FEATURE_LISTS -> tensors_sharing_feature_lists
     )
 
     val dataFrame = session.read.avro(INPUT_SHARE_FEATURE_PATH)
-    val tensorizeInParams = TensorizeInJobParamsParser.parse(params)
+    val avro2TFParams = Avro2TFJobParamsParser.parse(TestUtil.convertParamMapToParamList(params))
 
-    val dataFrameExtracted = FeatureExtraction.run(dataFrame, tensorizeInParams)
-    FeatureListGeneration.run(dataFrameExtracted, tensorizeInParams)
+    val dataFrameExtracted = FeatureExtraction.run(dataFrame, avro2TFParams)
+    FeatureListGeneration.run(dataFrameExtracted, avro2TFParams)
 
     // get actual generated feature list
     val fileSystem = FileSystem.get(session.sparkContext.hadoopConfiguration)
-    val featureListPath = new Path(tensorizeInParams.workingDir.featureListPath)
+    val featureListPath = new Path(avro2TFParams.workingDir.featureListPath)
     val filesIterator = fileSystem.listFiles(featureListPath, ENABLE_RECURSIVE)
     var actualFeatureListFiles = Map[String, FileStatus]()
     while (filesIterator.hasNext) {
@@ -305,23 +306,23 @@ class FeatureListGenerationTest extends WithLocalSparkSession {
   )
   def testExceptionNonUniqueNameForNTVSharingFeatureList(): Unit = {
 
-    val tensorizeInConfig = new File(
-      getClass.getClassLoader.getResource(TENSORIZEIN_CONFIG_PATH_VALUE_SHARE_FEATURE).getFile
+    val avro2TFConfig = new File(
+      getClass.getClassLoader.getResource(AVRO2TF_CONFIG_PATH_VALUE_SHARE_FEATURE).getFile
     ).getAbsolutePath
     FileUtils.deleteDirectory(new File(WORKING_DIRECTORY_FEATURE_LIST_GENERATION_TEXT))
 
-    val params = Array(
-      INPUT_PATHS_NAME, INPUT_SHARE_FEATURE_PATH,
-      WORKING_DIRECTORY_NAME, WORKING_DIRECTORY_FEATURE_LIST_GENERATION_TEXT,
-      TENSORIZEIN_CONFIG_PATH_NAME, tensorizeInConfig,
-      TENSORS_SHARING_FEATURE_LISTS_NAME, TENSORS_SHARING_FEATURE_LISTS_VALUE_CASE_3
+    val params = Map(
+      Avro2TFJobParamNames.INPUT_PATHS -> INPUT_SHARE_FEATURE_PATH,
+      Avro2TFJobParamNames.WORKING_DIR -> WORKING_DIRECTORY_FEATURE_LIST_GENERATION_TEXT,
+      Avro2TFJobParamNames.AVRO2TF_CONFIG_PATH -> avro2TFConfig,
+      Avro2TFJobParamNames.TENSORS_SHARING_FEATURE_LISTS -> TENSORS_SHARING_FEATURE_LISTS_VALUE_CASE_3
     )
 
     val dataFrame = session.read.avro(INPUT_SHARE_FEATURE_PATH)
-    val tensorizeInParams = TensorizeInJobParamsParser.parse(params)
+    val avro2TFParams = Avro2TFJobParamsParser.parse(TestUtil.convertParamMapToParamList(params))
 
-    val dataFrameExtracted = FeatureExtraction.run(dataFrame, tensorizeInParams)
-    FeatureListGeneration.run(dataFrameExtracted, tensorizeInParams)
+    val dataFrameExtracted = FeatureExtraction.run(dataFrame, avro2TFParams)
+    FeatureListGeneration.run(dataFrameExtracted, avro2TFParams)
   }
 
   /**
@@ -331,37 +332,37 @@ class FeatureListGenerationTest extends WithLocalSparkSession {
   @Test
   def testTermOnlyFeatureList(): Unit = {
 
-    val tensorizeInConfig = new File(
-      getClass.getClassLoader.getResource(TENSORIZEIN_CONFIG_PATH_VALUE_SHARE_FEATURE).getFile
+    val avro2TFConfig = new File(
+      getClass.getClassLoader.getResource(AVRO2TF_CONFIG_PATH_VALUE_SHARE_FEATURE).getFile
     ).getAbsolutePath
     FileUtils.deleteDirectory(new File(WORKING_DIRECTORY_FEATURE_LIST_GENERATION_TEXT))
 
-    val params = Array(
-      INPUT_PATHS_NAME, INPUT_SHARE_FEATURE_PATH,
-      WORKING_DIRECTORY_NAME, WORKING_DIRECTORY_FEATURE_LIST_GENERATION_TEXT,
-      TENSORIZEIN_CONFIG_PATH_NAME, tensorizeInConfig,
-      TERM_ONLY_FEATURE_LIST_NAME, "true"
+    val params = Map(
+      Avro2TFJobParamNames.INPUT_PATHS -> INPUT_SHARE_FEATURE_PATH,
+      Avro2TFJobParamNames.WORKING_DIR -> WORKING_DIRECTORY_FEATURE_LIST_GENERATION_TEXT,
+      Avro2TFJobParamNames.AVRO2TF_CONFIG_PATH -> avro2TFConfig,
+      Avro2TFJobParamNames.ENABLE_TERM_ONLY_FEATURE_LIST -> "true"
     )
 
     val dataFrame = session.read.avro(INPUT_SHARE_FEATURE_PATH)
-    val tensorizeInParams = TensorizeInJobParamsParser.parse(params)
+    val avro2TFParams = Avro2TFJobParamsParser.parse(TestUtil.convertParamMapToParamList(params))
 
-    val dataFrameExtracted = FeatureExtraction.run(dataFrame, tensorizeInParams)
-    FeatureListGeneration.run(dataFrameExtracted, tensorizeInParams)
+    val dataFrameExtracted = FeatureExtraction.run(dataFrame, avro2TFParams)
+    FeatureListGeneration.run(dataFrameExtracted, avro2TFParams)
 
     // get actual generated feature list
     val fileSystem = FileSystem.get(session.sparkContext.hadoopConfiguration)
-    val featureListPath = new Path(tensorizeInParams.workingDir.featureListPath)
+    val featureListPath = new Path(avro2TFParams.workingDir.featureListPath)
     val featureLists = fileSystem.listStatus(featureListPath).map(_.getPath.getName)
-    val termOnlyFeatureListPath = new Path(tensorizeInParams.workingDir.termOnlyFeatureListPath)
+    val termOnlyFeatureListPath = new Path(avro2TFParams.workingDir.termOnlyFeatureListPath)
     val termOnlyFeatureLists = fileSystem.listStatus(termOnlyFeatureListPath).map(_.getPath.getName)
     assertEquals(featureLists.toSet, termOnlyFeatureLists.toSet)
 
     val termFileStream = fileSystem
-      .open(new Path(tensorizeInParams.workingDir.termOnlyFeatureListPath, MIX_NTV_FEATURE_NAME))
+      .open(new Path(avro2TFParams.workingDir.termOnlyFeatureListPath, MIX_NTV_FEATURE_NAME))
     val terms = scala.io.Source.fromInputStream(termFileStream, UTF_8.name()).getLines().toSeq
     val nameTermFileStream = fileSystem
-      .open(new Path(tensorizeInParams.workingDir.featureListPath, MIX_NTV_FEATURE_NAME))
+      .open(new Path(avro2TFParams.workingDir.featureListPath, MIX_NTV_FEATURE_NAME))
     val nameTerms = scala.io.Source.fromInputStream(nameTermFileStream, UTF_8.name()).getLines().toSeq
     val termCounts = new mutable.HashMap[String, Long]().withDefaultValue(0L)
     nameTerms.foreach {

@@ -1,8 +1,8 @@
 package com.linkedin.avro2tf.helpers
 
 import com.linkedin.avro2tf.configs.Tokenization
-import com.linkedin.avro2tf.parsers.TensorizeInParams
-import com.linkedin.avro2tf.utils.Constants._
+import com.linkedin.avro2tf.parsers.Avro2TFParams
+import com.linkedin.avro2tf.constants.Constants._
 import org.apache.spark.ml.feature.{RegexTokenizer, StopWordsRemover}
 import org.apache.spark.sql
 import org.apache.spark.sql.DataFrame
@@ -18,14 +18,14 @@ object TextTokenizationTransformer {
    * Tokenize text feature
    *
    * @param dataFrame Input data Spark DataFrame
-   * @param params TensorizeIn parameters specified by user
+   * @param params Avro2TF parameters specified by user
    * @return A Spark DataFrame
    */
-  def tokenizeTextFeature(dataFrame: DataFrame, params: TensorizeInParams): sql.DataFrame = {
+  def tokenizeTextFeature(dataFrame: DataFrame, params: Avro2TFParams): sql.DataFrame = {
 
     var tokenizedDataFrame = dataFrame
 
-    TensorizeInConfigHelper.concatFeaturesAndLabels(params)
+    Avro2TFConfigHelper.concatFeaturesAndLabels(params)
       .foreach(featureOrLabel => {
         featureOrLabel.inputFeatureInfo.get.transformConfig match {
           case Some(transformConfig) if transformConfig.tokenization.isDefined =>

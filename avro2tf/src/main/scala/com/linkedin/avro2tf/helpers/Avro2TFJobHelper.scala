@@ -4,26 +4,27 @@ import scala.collection.mutable
 
 import com.databricks.spark.avro._
 import com.linkedin.avro2tf.configs.{DataType, Feature}
-import com.linkedin.avro2tf.parsers.TensorizeInParams
-import com.linkedin.avro2tf.utils.Constants._
-import com.linkedin.avro2tf.utils.{CommonUtils, Constants, IOUtils, TrainingMode}
+import com.linkedin.avro2tf.constants.Constants
+import com.linkedin.avro2tf.parsers.Avro2TFParams
+import com.linkedin.avro2tf.constants.Constants._
+import com.linkedin.avro2tf.utils.{CommonUtils, IOUtils, TrainingMode}
 import org.apache.spark.sql.expressions.UserDefinedFunction
 import org.apache.spark.sql.functions.{expr, udf}
 import org.apache.spark.sql._
 
 /**
- * Helper file for TensorizeIn job
+ * Helper file for Avro2TF job
  *
  */
-object TensorizeInJobHelper {
+object Avro2TFJobHelper {
   /**
    * Read data from HDFS to Spark DataFrame
    *
    * @param session SparkSession
-   * @param params TensorizeIn parameters specified by user
+   * @param params Avro2TF parameters specified by user
    * @return Spark DataFrame
    */
-  def readDataFromHDFS(session: SparkSession, params: TensorizeInParams): DataFrame = {
+  def readDataFromHDFS(session: SparkSession, params: Avro2TFParams): DataFrame = {
 
     val inputData = if (params.inputDateRange.nonEmpty) {
       // Read Avro data based on input date range
@@ -44,9 +45,9 @@ object TensorizeInJobHelper {
    * Save Spark DataFrame data to HDFS
    *
    * @param dataFrame Spark DataFrame
-   * @param params TensorizeIn parameters specified by user
+   * @param params Avro2TF parameters specified by user
    */
-  def saveDataToHDFS(dataFrame: DataFrame, params: TensorizeInParams): Unit = {
+  def saveDataToHDFS(dataFrame: DataFrame, params: Avro2TFParams): Unit = {
 
     val outputPath = params.executionMode match {
       case TrainingMode.training => params.workingDir.trainingDataPath
@@ -106,18 +107,18 @@ object TensorizeInJobHelper {
   }
 
   /**
-   * Sanity check on tensor names specified in TensorizeIn config
+   * Sanity check on tensor names specified in Avro2TF config
    *
    * @param dataFrame Spark DataFrame
-   * @param params TensorizeIn parameters specified by user
+   * @param params Avro2TF parameters specified by user
    */
-  def tensorsNameCheck(dataFrame: DataFrame, params: TensorizeInParams): Unit = {
+  def tensorsNameCheck(dataFrame: DataFrame, params: Avro2TFParams): Unit = {
 
     // Get all existing input data frame column names
     val allExistingColumnNames = dataFrame.columns.toSet
 
     // Combine the feature and label tensor lists
-    val tensors = TensorizeInConfigHelper.concatFeaturesAndLabels(params)
+    val tensors = Avro2TFConfigHelper.concatFeaturesAndLabels(params)
 
     // Build an empty set of output tensors to check duplication
     val outputTensors = new mutable.HashSet[String]
@@ -127,7 +128,7 @@ object TensorizeInJobHelper {
         // Get tensor name from output tensor info
         val tensorName = tensor.outputTensorInfo.name
 
-        // Check if tensor name is used more than once in TensorizeIn config
+        // Check if tensor name is used more than once in Avro2TF config
         if (!outputTensors.contains(tensorName)) {
           outputTensors.add(tensorName)
         } else {
@@ -193,12 +194,12 @@ object TensorizeInJobHelper {
    * Prepare data to be saved as TFRecord
    *
    * @param dataFrame Input data Spark DataFrame
-   * @param params TensorizeIn parameters specified by user
+   * @param params Avro2TF parameters specified by user
    * @return A Spark DataFrame
    */
-  private def prepareTFRecord(dataFrame: DataFrame, params: TensorizeInParams): DataFrame = {
+  private def prepareTFRecord(dataFrame: DataFrame, params: Avro2TFParams): DataFrame = {
 
-    val outputTensorSparsity = TensorizeInConfigHelper.getOutputTensorSparsity(params)
+    val outputTensorSparsity = Avro2TFConfigHelper.getOutputTensorSparsity(params)
     val newConvertedColumns = new mutable.ArrayBuffer[Column]
     val convertedColumnNames = new mutable.HashSet[String]
     val dataFrameSchema = dataFrame.schema

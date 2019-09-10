@@ -54,23 +54,23 @@ case class Tokenization(removeStopWords: Boolean = false)
 case class TransformConfig(hashInfo: Option[HashInfo], tokenization: Option[Tokenization])
 
 /**
- * Case class for TensorizeIn configuration
+ * Case class for Avro2TF configuration
  *
  * @param features A sequence of features
  * @param labels A sequence of labels, which may be empty
  */
-case class TensorizeInConfiguration(
+case class Avro2TFConfiguration(
   features: Seq[Feature],
   labels: Seq[Feature] = Seq()
 ) {
   require(
     features.nonEmpty,
-    s"TensorizeIn configuration must have a non-empty sequence of features."
+    s"Avro2TF configuration must have a non-empty sequence of features."
   )
 }
 
 /**
- * Case class for Feature in TensorizeIn configuration
+ * Case class for Feature in Avro2TF configuration
  *
  * @param inputFeatureInfo Optional input feature information
  * @param outputTensorInfo Output tensor information
@@ -89,7 +89,7 @@ case class Feature(
 }
 
 /**
- * Case class for Input Feature Information in TensorizeIn configuration
+ * Case class for Input Feature Information in Avro2TF configuration
  *
  * @param columnExpr Optional column expression
  * @param columnConfig Optional column configuration
@@ -101,7 +101,7 @@ case class InputFeatureInfo(
   transformConfig: Option[TransformConfig])
 
 /**
- * Case class for Output Tensor Information in TensorizeIn configuration
+ * Case class for Output Tensor Information in Avro2TF configuration
  *
  * @param name Name of tensor
  * @param dtype Data type of tensor

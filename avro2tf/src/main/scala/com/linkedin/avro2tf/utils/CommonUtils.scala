@@ -1,8 +1,8 @@
 package com.linkedin.avro2tf.utils
 
 import com.linkedin.avro2tf.configs.DataType
-import com.linkedin.avro2tf.jobs.TensorizeIn
-import com.linkedin.avro2tf.utils.Constants._
+import com.linkedin.avro2tf.jobs.Avro2TF
+import com.linkedin.avro2tf.constants.Constants._
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.types._
 
@@ -51,7 +51,7 @@ object CommonUtils {
    * Check if the type of a column is an of sparse vector
    *
    * @param dataType The schema type of a column
-   * @return is type of [[com.linkedin.avro2tf.jobs.TensorizeIn.SparseVector]]
+   * @return is type of [[com.linkedin.avro2tf.jobs.Avro2TF.SparseVector]]
    */
   def isSparseVector(dataType: DataType): Boolean = {
 
@@ -67,7 +67,7 @@ object CommonUtils {
    * Check if the type of a column is an array of sparse vector
    *
    * @param dataType The schema type of a column
-   * @return is array of [[com.linkedin.avro2tf.jobs.TensorizeIn.SparseVector]]
+   * @return is array of [[com.linkedin.avro2tf.jobs.Avro2TF.SparseVector]]
    */
   def isArrayOfSparseVector(dataType: DataType): Boolean = {
 
@@ -212,7 +212,7 @@ object CommonUtils {
    * @param cardinality The cardinality of Ids
    * @return One dense value array
    */
-  def idValuesToDense(idValues: Seq[TensorizeIn.IdValue], cardinality: Int): Seq[Float] = {
+  def idValuesToDense(idValues: Seq[Avro2TF.IdValue], cardinality: Int): Seq[Float] = {
 
     val values = new Array[Float](cardinality)
     idValues.foreach(idValue => values(idValue.id.toInt) = idValue.value)

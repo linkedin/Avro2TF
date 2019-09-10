@@ -1,32 +1,32 @@
 package com.linkedin.avro2tf.jobs
 
-import com.linkedin.avro2tf.helpers.TensorizeInJobHelper
+import com.linkedin.avro2tf.helpers.Avro2TFJobHelper
 import com.linkedin.avro2tf.parsers._
-import com.linkedin.avro2tf.utils.{Constants, TrainingMode}
+import com.linkedin.avro2tf.utils.TrainingMode
 import org.apache.spark.sql._
 import org.apache.spark.storage.StorageLevel
 import org.slf4j.{Logger, LoggerFactory}
 
 /**
- * The TensorizeIn job is used to make users training data ready to be consumed by deep learning training frameworks like TensorFlow
+ * The Avro2TF job is used to make users training data ready to be consumed by deep learning training frameworks like TensorFlow
  *
  */
-object TensorizeIn {
-  val logger: Logger = LoggerFactory.getLogger(TensorizeIn.getClass)
+object Avro2TF {
+  val logger: Logger = LoggerFactory.getLogger(Avro2TF.getClass)
 
   /**
-   * The main function to perform TensorizeIn job
+   * The main function to perform Avro2TF job
    *
    * @param spark Spark Session
-   * @param params TensorizeIn parameters specified by user
+   * @param params Avro2TF parameters specified by user
    */
-  def run(spark: SparkSession, params: TensorizeInParams): Unit = {
+  def run(spark: SparkSession, params: Avro2TFParams): Unit = {
 
     // Read input data from HDFS to Spark DataFrame
-    var dataFrame = TensorizeInJobHelper.readDataFromHDFS(spark, params)
+    var dataFrame = Avro2TFJobHelper.readDataFromHDFS(spark, params)
 
-    // Sanity check on tensor names specified in TensorizeIn config
-    TensorizeInJobHelper.tensorsNameCheck(dataFrame, params)
+    // Sanity check on tensor names specified in Avro2TF config
+    Avro2TFJobHelper.tensorsNameCheck(dataFrame, params)
 
     // Extracts features that will be converted to tensors
     dataFrame = FeatureExtraction.run(dataFrame, params)
@@ -50,18 +50,18 @@ object TensorizeIn {
       if (params.partitionFieldName.nonEmpty) {
         dataFrame = PartitionIdGeneration.run(dataFrame, params)
       }
-      TensorizeInJobHelper.saveDataToHDFS(dataFrame, params)
+      Avro2TFJobHelper.saveDataToHDFS(dataFrame, params)
     }
   }
 
   /**
-   * Entry point to run the TensorizeIn Spark job
+   * Entry point to run the Avro2TF Spark job
    *
    * @param args arguments
    */
   def main(args: Array[String]): Unit = {
 
-    val params = TensorizeInJobParamsParser.parse(args)
+    val params = Avro2TFJobParamsParser.parse(args)
     val sparkSession = SparkSession.builder().appName(getClass.getName).getOrCreate()
 
     try {
