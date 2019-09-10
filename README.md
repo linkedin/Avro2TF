@@ -366,7 +366,7 @@ An example Avro2TF config will looks like this:
   --min-parts                       Optional.   The minimum number of partitions for input data; if below this threshold, repartition will be triggered.
   --shuffle                         Optional.   Whether to shuffle the converted training data with the default set to true.
   --external-feature-list-path      Optional.   The path to user supplied feature mapping files.
-  --avro2TF-config-path             Required.   The Avro2TF configuration in JSON format.
+  --avro2tf-config-path             Required.   The Avro2TF configuration in JSON format.
   --execution-mode                  Optional.   Whether to prepare training, validation, or test data.
   --enable-cache                    Optional.   Whether to cache the intermediate Spark DataFrame result with default set to false.
   --skip-conversion                 Optional.   Whether to skip the conversion step with default set to false.
