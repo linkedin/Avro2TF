@@ -11,12 +11,12 @@ import org.testng.Assert._
 
 class Avro2TFConfigHelperTest {
 
-  val movieLensConfigPath: String = new File(
-    getClass.getClassLoader.getResource(AVRO2TF_CONFIG_PATH_VALUE_MOVIELENS).getFile
-  ).getAbsolutePath
-
   @Test
   def testGetColsWithHashInfo() {
+
+    val movieLensConfigPath: String = new File(
+      getClass.getClassLoader.getResource(AVRO2TF_CONFIG_PATH_VALUE_MOVIELENS).getFile
+    ).getAbsolutePath
 
     val commandLineArgs = Map(
       Avro2TFJobParamNames.INPUT_PATHS -> INPUT_PATHS_VALUE,
