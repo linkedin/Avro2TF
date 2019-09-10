@@ -4,7 +4,7 @@ import java.time.temporal.ChronoUnit
 import java.time.{LocalDate, LocalDateTime}
 
 import com.databricks.spark.avro._
-import com.linkedin.avro2tf.jobs.TensorizeIn.NameTermValue
+import com.linkedin.avro2tf.jobs.Avro2TF.NameTermValue
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.{SaveMode, SparkSession}

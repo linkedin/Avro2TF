@@ -10,23 +10,23 @@ import io.circe.parser.decode
 import org.testng.Assert._
 import org.testng.annotations.Test
 
-class TensorizeInConfigParserTest {
+class Avro2TFConfigParserTest {
   @Test
   def testJsonConfigLoading(): Unit = {
 
-    val configString = loadConfigString(TENSORIZEIN_CONFIG_PATH_VALUE_2)
-    val config = TensorizeInConfigParser.getTensorizeInConfiguration(configString)
+    val configString = loadConfigString(AVRO2TF_CONFIG_PATH_VALUE_2)
+    val config = Avro2TFConfigParser.getAvro2TFConfiguration(configString)
     assertNotNull(config)
   }
 
   @Test
   def testJsonAndHoconEqual(): Unit = {
 
-    val jsonConfigString = loadConfigString(TENSORIZEIN_CONFIG_PATH_VALUE_2)
-    val hoconConfigString = loadConfigString(TENSORIZEIN_CONFIG_PATH_VALUE_2_HOCON)
+    val jsonConfigString = loadConfigString(AVRO2TF_CONFIG_PATH_VALUE_2)
+    val hoconConfigString = loadConfigString(AVRO2TF_CONFIG_PATH_VALUE_2_HOCON)
 
-    val jsonConfig = TensorizeInConfigParser.getTensorizeInConfiguration(jsonConfigString)
-    val hoconConfig = TensorizeInConfigParser.getTensorizeInConfiguration(hoconConfigString)
+    val jsonConfig = Avro2TFConfigParser.getAvro2TFConfiguration(jsonConfigString)
+    val hoconConfig = Avro2TFConfigParser.getAvro2TFConfiguration(hoconConfigString)
 
     assertEquals(jsonConfig, hoconConfig)
 
@@ -39,7 +39,7 @@ class TensorizeInConfigParserTest {
   @Test(expectedExceptions = Array(classOf[ConfigException.Parse]))
   def testBadConfiguration(): Unit = {
 
-    TensorizeInConfigParser.getTensorizeInConfiguration("bad string")
+    Avro2TFConfigParser.getAvro2TFConfiguration("bad string")
   }
 
   @Test

@@ -5,11 +5,12 @@ import java.io.File
 import scala.io.Source
 
 import com.databricks.spark.avro._
-import com.linkedin.avro2tf.helpers.TensorizeInJobHelper
-import com.linkedin.avro2tf.parsers.TensorizeInJobParamsParser
+import com.linkedin.avro2tf.constants.{Avro2TFJobParamNames, Constants}
+import com.linkedin.avro2tf.helpers.Avro2TFJobHelper
+import com.linkedin.avro2tf.parsers.Avro2TFJobParamsParser
 import com.linkedin.avro2tf.utils.ConstantsForTest._
 import com.linkedin.avro2tf.utils.TestUtil.removeWhiteSpace
-import com.linkedin.avro2tf.utils.{Constants, WithLocalSparkSession}
+import com.linkedin.avro2tf.utils.{TestUtil, WithLocalSparkSession}
 import org.apache.commons.io.FileUtils
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.testng.Assert._
@@ -23,27 +24,27 @@ class PartitionIdGenerationTest extends WithLocalSparkSession {
   @Test
   def testConversion(): Unit = {
 
-    val tensorizeInConfig = new File(
-      getClass.getClassLoader.getResource(TENSORIZEIN_CONFIG_PATH_VALUE_SHARE_FEATURE).getFile
+    val avro2TFConfig = new File(
+      getClass.getClassLoader.getResource(AVRO2TF_CONFIG_PATH_VALUE_SHARE_FEATURE).getFile
     ).getAbsolutePath
     FileUtils.deleteDirectory(new File(WORKING_DIRECTORY_PARTITION_TEST))
 
-    val params = Array(
-      INPUT_PATHS_NAME, INPUT_SHARE_FEATURE_PATH,
-      WORKING_DIRECTORY_NAME, WORKING_DIRECTORY_PARTITION_TEST,
-      TENSORIZEIN_CONFIG_PATH_NAME, tensorizeInConfig,
-      OUTPUT_FORMAT_NAME, AVRO_RECORD,
-      PARTITION_FIELD_NAME, "send_platform"
+    val params = Map(
+      Avro2TFJobParamNames.INPUT_PATHS -> INPUT_SHARE_FEATURE_PATH,
+      Avro2TFJobParamNames.WORKING_DIR -> WORKING_DIRECTORY_PARTITION_TEST,
+      Avro2TFJobParamNames.AVRO2TF_CONFIG_PATH -> avro2TFConfig,
+      Avro2TFJobParamNames.OUTPUT_FORMAT -> AVRO_RECORD,
+      Avro2TFJobParamNames.PARTITION_FIELD_NAME -> "send_platform"
     )
     val dataFrame = session.read.avro(INPUT_SHARE_FEATURE_PATH)
-    val tensorizeInParams = TensorizeInJobParamsParser.parse(params)
+    val avro2TFParams = Avro2TFJobParamsParser.parse(TestUtil.convertParamMapToParamList(params))
 
-    val dataFrameExtracted = FeatureExtraction.run(dataFrame, tensorizeInParams)
-    val dataFrameTransformed = FeatureTransformation.run(dataFrameExtracted, tensorizeInParams)
-    FeatureListGeneration.run(dataFrameTransformed, tensorizeInParams)
-    TensorMetadataGeneration.run(dataFrameTransformed, tensorizeInParams)
-    val convertedDataFrame = FeatureIndicesConversion.run(dataFrameTransformed, tensorizeInParams)
-    val dataFrameWithPartitionId = PartitionIdGeneration.run(convertedDataFrame, tensorizeInParams)
+    val dataFrameExtracted = FeatureExtraction.run(dataFrame, avro2TFParams)
+    val dataFrameTransformed = FeatureTransformation.run(dataFrameExtracted, avro2TFParams)
+    FeatureListGeneration.run(dataFrameTransformed, avro2TFParams)
+    TensorMetadataGeneration.run(dataFrameTransformed, avro2TFParams)
+    val convertedDataFrame = FeatureIndicesConversion.run(dataFrameTransformed, avro2TFParams)
+    val dataFrameWithPartitionId = PartitionIdGeneration.run(convertedDataFrame, avro2TFParams)
 
     // Check if the partition id is in final DataFrame
     assertEquals(
@@ -54,12 +55,12 @@ class PartitionIdGenerationTest extends WithLocalSparkSession {
     val expectedTensorMetadataPath = getClass.getClassLoader.getResource(EXPECTED_TENSOR_METADATA_WITH_PARTITION_ID)
       .getFile
     assertEquals(
-      removeWhiteSpace(Source.fromFile(tensorizeInParams.workingDir.tensorMetadataPath).mkString),
+      removeWhiteSpace(Source.fromFile(avro2TFParams.workingDir.tensorMetadataPath).mkString),
       removeWhiteSpace(Source.fromFile(expectedTensorMetadataPath).mkString))
 
-    TensorizeInJobHelper.saveDataToHDFS(dataFrameWithPartitionId, tensorizeInParams)
+    Avro2TFJobHelper.saveDataToHDFS(dataFrameWithPartitionId, avro2TFParams)
     val fileSystem = FileSystem.get(dataFrame.sparkSession.sparkContext.hadoopConfiguration)
-    val partitionDirs = fileSystem.listStatus(new Path(tensorizeInParams.workingDir.trainingDataPath))
+    val partitionDirs = fileSystem.listStatus(new Path(avro2TFParams.workingDir.trainingDataPath))
       .filter(_.isDirectory()).map(_.getPath.getName).toSeq
 
     // Check if the the outputs are divided into sub dirs

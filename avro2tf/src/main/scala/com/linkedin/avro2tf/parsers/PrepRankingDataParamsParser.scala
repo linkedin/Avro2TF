@@ -1,5 +1,6 @@
 package com.linkedin.avro2tf.parsers
 
+import com.linkedin.avro2tf.constants.PrepRankingJobParamNames
 import com.linkedin.avro2tf.utils.TrainingMode
 
 case class PrepRankingDataParams(
@@ -24,7 +25,7 @@ object PrepRankingDataParamsParser {
     "Parsing command line for PrepRankingData job."
   ) {
     // Parse the path to working directory where the output should be saved
-    opt[String]("input-data-path")
+    opt[String](PrepRankingJobParamNames.INPUT_DATA_PATH)
       .action((x, p) => p.copy(inputDataPath = x.trim))
       .required()
       .text(
@@ -32,7 +33,7 @@ object PrepRankingDataParamsParser {
           |The input data path.""".stripMargin
       )
 
-    opt[String]("input-metadata-path")
+    opt[String](PrepRankingJobParamNames.INPUT_METADATA_PATH)
       .action((x, p) => p.copy(inputMetadataPath = x.trim))
       .required()
       .text(
@@ -40,7 +41,7 @@ object PrepRankingDataParamsParser {
           |The input metadata path.""".stripMargin
       )
 
-    opt[String]("output-data-path")
+    opt[String](PrepRankingJobParamNames.OUTPUT_DATA_PATH)
       .action((x, p) => p.copy(outputDataPath = x.trim))
       .required()
       .text(
@@ -48,7 +49,7 @@ object PrepRankingDataParamsParser {
           |The output data path.""".stripMargin
       )
 
-    opt[String]("output-metadata-path")
+    opt[String](PrepRankingJobParamNames.OUTPUT_METADATA_PATH)
       .action((x, p) => p.copy(outputMetadataPath = x.trim))
       .required()
       .text(
@@ -56,7 +57,7 @@ object PrepRankingDataParamsParser {
           |The output metadata path.""".stripMargin
       )
 
-    opt[String]("group-id-list")
+    opt[String](PrepRankingJobParamNames.GROUP_ID_LIST)
       .action((x, p) => p.copy(groupIdList = x.split(",").map(_.trim)))
       .required()
       .text(
@@ -65,7 +66,7 @@ object PrepRankingDataParamsParser {
           |For example: groupId1,groupId2
         """.stripMargin)
 
-    opt[Int]("group-list-max-size")
+    opt[Int](PrepRankingJobParamNames.GROUP_LIST_MAX_SIZE)
       .action((x, p) => p.copy(groupListMaxSize = x))
       .required()
       .text(
@@ -74,7 +75,7 @@ object PrepRankingDataParamsParser {
         """.stripMargin
       )
 
-    opt[Boolean]("enable-filter-zero")
+    opt[Boolean](PrepRankingJobParamNames.ENABLE_FILTER_ZERO)
       .action( (x, p) => p.copy(enableFilterZero = x))
       .optional()
       .text(
@@ -83,7 +84,7 @@ object PrepRankingDataParamsParser {
         """.stripMargin
       )
 
-    opt[String]("drop-column-list")
+    opt[String](PrepRankingJobParamNames.DROP_COLUMN_LIST)
       .action{ (x, p) =>
         val fList = x.split(",").map(_.trim)
         if (fList.isEmpty) {
@@ -99,7 +100,7 @@ object PrepRankingDataParamsParser {
         """.stripMargin
       )
 
-    opt[Int]("num-output-files")
+    opt[Int](PrepRankingJobParamNames.NUM_OUTPUT_FILES)
       .action((x, p) => p.copy(numOutputFiles = x))
       .optional()
       .text(
@@ -108,7 +109,7 @@ object PrepRankingDataParamsParser {
         """.stripMargin
       )
 
-    opt[Boolean]("shuffle")
+    opt[Boolean](PrepRankingJobParamNames.SHUFFLE)
       .action((x, p) => p.copy(enableShuffle = x))
       .optional()
       .text(
@@ -117,7 +118,7 @@ object PrepRankingDataParamsParser {
       )
 
     // Parse the execution mode, which decides whether to prepare training, validation, or test data
-    opt[String]("execution-mode")
+    opt[String](PrepRankingJobParamNames.EXECUTION_MODE)
       .action(
         (x, p) =>
           p.copy(executionMode = TrainingMode.withName(x.toLowerCase))
@@ -128,7 +129,7 @@ object PrepRankingDataParamsParser {
           |Whether to prepare training, validation, or test data.""".stripMargin
       )
 
-    opt[Double]("label-padding-value")
+    opt[Double](PrepRankingJobParamNames.LABEL_PADDING_VALUE)
       .action((x, p) => p.copy(labelPaddingValue = x))
       .optional()
       .text(
@@ -137,7 +138,7 @@ object PrepRankingDataParamsParser {
         """.stripMargin
       )
 
-    opt[Double]("feature-padding-value")
+    opt[Double](PrepRankingJobParamNames.FEATURE_PADDING_VALUE)
       .action((x, p) => p.copy(featurePaddingValue = x))
       .optional()
       .text(

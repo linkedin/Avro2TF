@@ -6,10 +6,10 @@ import scala.collection.mutable
 import scala.io.Source
 
 import com.linkedin.avro2tf.configs.DataType
-import com.linkedin.avro2tf.helpers.TensorizeInConfigHelper
-import com.linkedin.avro2tf.parsers.TensorizeInParams
+import com.linkedin.avro2tf.helpers.Avro2TFConfigHelper
+import com.linkedin.avro2tf.parsers.Avro2TFParams
 import com.linkedin.avro2tf.utils.CommonUtils
-import com.linkedin.avro2tf.utils.Constants._
+import com.linkedin.avro2tf.constants.Constants._
 
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileSystem, Path}
@@ -28,14 +28,14 @@ object FeatureIndicesConversion {
    * Note: for any null columns, we will pad an entry with the max or last index
    *
    * @param dataFrame Input data Spark DataFrame
-   * @param params TensorizeIn parameters specified by user
+   * @param params Avro2TF parameters specified by user
    * @return A Spark DataFrame
    */
-  def run(dataFrame: DataFrame, params: TensorizeInParams): DataFrame = {
+  def run(dataFrame: DataFrame, params: Avro2TFParams): DataFrame = {
 
     val columnFeatureMapping = loadColumnFeatureList(params, dataFrame.sparkSession.sparkContext.hadoopConfiguration)
-    val outputTensorDataTypes = TensorizeInConfigHelper.getOutputTensorDataTypes(params)
-    val outputTensorSparsity = TensorizeInConfigHelper.getOutputTensorSparsity(params)
+    val outputTensorDataTypes = Avro2TFConfigHelper.getOutputTensorDataTypes(params)
+    val outputTensorSparsity = Avro2TFConfigHelper.getOutputTensorSparsity(params)
     val dataFrameSchema = dataFrame.schema
     val convertedColumns = new mutable.ArrayBuffer[Column]
     val convertedColumnNames = new mutable.HashSet[String]
@@ -91,7 +91,7 @@ object FeatureIndicesConversion {
    * @param hadoopConf Hadoop configuration
    */
   private def loadColumnFeatureList(
-    params: TensorizeInParams,
+    params: Avro2TFParams,
     hadoopConf: Configuration
   ): Map[String, Map[String, Long]] = {
 
@@ -130,7 +130,7 @@ object FeatureIndicesConversion {
     udf {
       ntvs: Seq[Row] => {
         val idValues = convertNTVToIdValues(ntvs, featureMapping, discardUnknownEntries)
-        TensorizeIn.SparseVector(idValues.map(_.id), idValues.map(_.value))
+        Avro2TF.SparseVector(idValues.map(_.id), idValues.map(_.value))
       }
     }
   }
@@ -164,18 +164,18 @@ object FeatureIndicesConversion {
   private def convertNTVToIdValues(
     ntvs: Seq[Row],
     featureMapping: Map[String, Long],
-    discardUnknownEntries: Boolean): Seq[TensorizeIn.IdValue] = {
+    discardUnknownEntries: Boolean): Seq[Avro2TF.IdValue] = {
 
     // The number of unique name-term combinations
     val cardinality = featureMapping.size.toLong
     val lastIndex = if (discardUnknownEntries) cardinality - 1 else cardinality
-    val paddingEntry = TensorizeIn.IdValue(lastIndex, 0)
+    val paddingEntry = Avro2TF.IdValue(lastIndex, 0)
     if (ntvs == null || ntvs.isEmpty) {
       // if bag is empty put a dummy one with id as the unknown Id (last id) = cardinality
       Seq(paddingEntry)
     } else {
-      val idValuesBuffer = new mutable.ArrayBuffer[TensorizeIn.IdValue]
-      val unknownIdValue = TensorizeIn.IdValue(lastIndex, 1)
+      val idValuesBuffer = new mutable.ArrayBuffer[Avro2TF.IdValue]
+      val unknownIdValue = Avro2TF.IdValue(lastIndex, 1)
       var hasUnknownId = false
 
       ntvs.foreach {
@@ -186,7 +186,7 @@ object FeatureIndicesConversion {
           val id = featureMapping.getOrElse(s"$name,$term", lastIndex)
 
           if (featureMapping.contains(s"$name,$term")) {
-            idValuesBuffer.append(TensorizeIn.IdValue(id, value))
+            idValuesBuffer.append(Avro2TF.IdValue(id, value))
           } else {
             hasUnknownId = true
           }

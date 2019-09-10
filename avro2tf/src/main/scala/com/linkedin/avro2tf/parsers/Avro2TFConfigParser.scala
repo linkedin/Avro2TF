@@ -5,7 +5,7 @@ import scala.util.Try
 
 import cats.data.NonEmptyList
 import com.linkedin.avro2tf.configs._
-import com.linkedin.avro2tf.utils.Constants
+import com.linkedin.avro2tf.constants.Constants
 import com.typesafe.config.ConfigFactory
 import io.circe
 import io.circe.Errors
@@ -13,17 +13,17 @@ import io.circe.config.syntax._
 import io.circe.generic.extras.auto._
 
 /**
- * Parser file for TensorizeIn configuration
+ * Parser file for Avro2TF configuration
  */
-object TensorizeInConfigParser {
+object Avro2TFConfigParser {
 
   /**
-   * Get the TensorizeIn configuration with sanity check
+   * Get the Avro2TF configuration with sanity check
    *
-   * @param configString HOCON format of TensorizeIn configuration
-   * @return TensorizeIn configuration
+   * @param configString HOCON format of Avro2TF configuration
+   * @return Avro2TF configuration
    */
-  def getTensorizeInConfiguration(configString: String): TensorizeInConfiguration = {
+  def getAvro2TFConfiguration(configString: String): Avro2TFConfiguration = {
     import com.linkedin.avro2tf.configs.JsonCodecs._
 
     val rawConfig = ConfigFactory.parseString(configString)
@@ -42,14 +42,14 @@ object TensorizeInConfigParser {
     val features = featureConfig.map(_.right.get)
     val labels = labelConfig.map(_.map(_.right.get))
 
-    TensorizeInConfiguration(
+    Avro2TFConfiguration(
       features = sanityCheck(features),
       labels = sanityCheck(labels.getOrElse(Seq.empty))
     )
   }
 
   /**
-   * Sanity check on features or labels in TensorizeIn configuration
+   * Sanity check on features or labels in Avro2TF configuration
    *
    * @param featuresOrLabels A sequence of features or labels to be checked
    * @return A sequence of features or labels
@@ -65,8 +65,8 @@ object TensorizeInConfigParser {
    * Check column expression and column configuration in input feature information.
    * Add default column expression value with the name in output tensor information if input feature information does not exist
    *
-   * @param feature Feature in TensorizeIn configuration
-   * @return Feature in TensorizeIn configuration
+   * @param feature Feature in Avro2TF configuration
+   * @return Feature in Avro2TF configuration
    */
   private def checkColumnExprAndConfig(feature: Feature): Feature = {
 
@@ -84,7 +84,7 @@ object TensorizeInConfigParser {
   /** In the event the transform config specified neither hashInfo nor tokenization,
    * convert the [[InputFeatureInfo]]'s transform config to None.
    *
-   * @param inputFeatureInfo - the [[InputFeatureInfo]] of a [[Feature]] in the TensorizeIn configuration
+   * @param inputFeatureInfo - the [[InputFeatureInfo]] of a [[Feature]] in the Avro2TF configuration
    * @return the input with transform config normalized
    */
   private def normalizeTransform(inputFeatureInfo: InputFeatureInfo): InputFeatureInfo = {

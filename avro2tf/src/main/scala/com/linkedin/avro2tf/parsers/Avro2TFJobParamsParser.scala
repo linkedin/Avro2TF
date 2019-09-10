@@ -4,14 +4,15 @@ import java.io.File
 
 import scala.io.Source
 
-import com.linkedin.avro2tf.configs.TensorizeInConfiguration
-import com.linkedin.avro2tf.utils.Constants._
+import com.linkedin.avro2tf.configs.Avro2TFConfiguration
+import com.linkedin.avro2tf.constants.Avro2TFJobParamNames
+import com.linkedin.avro2tf.constants.Constants._
 import com.linkedin.avro2tf.utils.{IOUtils, TrainingMode}
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.hadoop.mapred.JobConf
 
 /**
- * TensorizeIn parsed parameters will be put into this case class for ease of access
+ * Avro2TF parsed parameters will be put into this case class for ease of access
  *
  * @param inputPaths A list of input paths
  * @param workingDir All intermediate and final results will be written to this directory
@@ -21,14 +22,13 @@ import org.apache.hadoop.mapred.JobConf
  * @param minParts Minimum number of partitions for input data
  * @param enableShuffle Whether to enable shuffling the final output data
  * @param externalFeaturesListPath Path of external feature list supplied by the user
- * @param tensorizeInConfig TensorizeIn configuration for features and labels to be tensorized
- * @param isTrainMode Whether preparing training data or test data
+ * @param avro2TFConfig Avro2TF configuration for features and labels to be tensorized
  * @param executionMode One of "train", "validate" or "test"
  * @param enableCache Whether to enable caching the intermediate Spark DataFrame result
  * @param skipConversion Indicate whether to skip the conversion step
  * @param outputFormat Output format of tensorized data, e.g. Avro or TFRecord
  */
-case class TensorizeInParams(
+case class Avro2TFParams(
   inputPaths: Seq[String],
   workingDir: WorkingDirectory,
   inputDateRange: Seq[String],
@@ -37,8 +37,7 @@ case class TensorizeInParams(
   minParts: Int,
   enableShuffle: Boolean,
   externalFeaturesListPath: String,
-  tensorizeInConfig: TensorizeInConfiguration,
-  isTrainMode: Boolean,
+  avro2TFConfig: Avro2TFConfiguration,
   executionMode: TrainingMode.TrainingMode,
   enableCache: Boolean,
   skipConversion: Boolean,
@@ -67,19 +66,19 @@ case class WorkingDirectory(rootPath: String) {
 }
 
 /**
- * Parser file for TensorizeIn job parameters from command line arguments
+ * Parser file for Avro2TF job parameters from command line arguments
  */
-object TensorizeInJobParamsParser {
+object Avro2TFJobParamsParser {
 
   /**
-   * Parser to parse TensorizeIn job parameters
+   * Parser to parse Avro2TF job parameters
    */
-  private val parser = new scopt.OptionParser[TensorizeInParams](
-    "Parsing command line for TensorizeIn job") {
+  private val parser = new scopt.OptionParser[Avro2TFParams](
+    "Parsing command line for Avro2TF job") {
 
     // Parse a list of comma separated paths for input
-    opt[Seq[String]]("input-paths")
-      .action((inputPaths, tensorizeInParams) => tensorizeInParams.copy(inputPaths = inputPaths))
+    opt[Seq[String]](Avro2TFJobParamNames.INPUT_PATHS)
+      .action((inputPaths, avro2TFParams) => avro2TFParams.copy(inputPaths = inputPaths))
       .required()
       .text(
         """Required.
@@ -87,8 +86,8 @@ object TensorizeInJobParamsParser {
       )
 
     // Parse the path to working directory where the output should be saved
-    opt[String]("working-dir")
-      .action((workingDir, tensorizeInParams) => tensorizeInParams.copy(workingDir = WorkingDirectory(workingDir.trim)))
+    opt[String](Avro2TFJobParamNames.WORKING_DIR)
+      .action((workingDir, avro2TFParams) => avro2TFParams.copy(workingDir = WorkingDirectory(workingDir.trim)))
       .required()
       .text(
         """Required.
@@ -96,12 +95,12 @@ object TensorizeInJobParamsParser {
       )
 
     // Parse the input date range in the format of yyyymmdd-yyyymmdd
-    opt[String]("input-date-range")
+    opt[String](Avro2TFJobParamNames.INPUT_DATE_RANGE)
       .action(
-        (intputDateRange, tensorizeInParams) => {
+        (intputDateRange, avro2TFParams) => {
           val dates = intputDateRange.trim.split('-')
           require(dates.length == 2, "must have start and end date")
-          tensorizeInParams.copy(inputDateRange = dates.map(_.trim))
+          avro2TFParams.copy(inputDateRange = dates.map(_.trim))
         }
       )
       .text(
@@ -110,14 +109,14 @@ object TensorizeInJobParamsParser {
       )
 
     // Parse the input days range in the format of startOffest-endOffset
-    opt[String]("input-days-range")
+    opt[String](Avro2TFJobParamNames.INPUT_DAYS_RANGE)
       .action(
-        (inputDaysRange, tensorizeInParams) => {
+        (inputDaysRange, avro2TFParams) => {
           val daysOffset = inputDaysRange.trim.split('-')
           require(daysOffset.length == 2, "must have start and end days offset")
           val intDaysOffset = daysOffset.map(_.trim.toInt)
           require(intDaysOffset.forall(_ >= 0), s"days-range can not be negative value: $inputDaysRange")
-          tensorizeInParams.copy(inputDaysRange = intDaysOffset)
+          avro2TFParams.copy(inputDaysRange = intDaysOffset)
         }
       )
       .text(
@@ -126,8 +125,8 @@ object TensorizeInJobParamsParser {
       )
 
     // Parse the number of output files with the default set to -1
-    opt[Int]("num-output-files")
-      .action((numOfOutputFiles, tensorizeInParams) => tensorizeInParams.copy(numOfOutputFiles = numOfOutputFiles))
+    opt[Int](Avro2TFJobParamNames.NUM_OUTPUT_FILES)
+      .action((numOfOutputFiles, avro2TFParams) => avro2TFParams.copy(numOfOutputFiles = numOfOutputFiles))
       .optional()
       .text(
         """Optional.
@@ -135,11 +134,11 @@ object TensorizeInJobParamsParser {
       )
 
     // Parse the minimum number of partitions for input data; if below this threshold, repartition will be triggered
-    opt[Int]("min-parts")
+    opt[Int](Avro2TFJobParamNames.MIN_PARTS)
       .action(
-        (minParts, tensorizeInParams) => {
+        (minParts, avro2TFParams) => {
           require(minParts > 0, "min-parts must be greater than 0")
-          tensorizeInParams.copy(minParts = minParts)
+          avro2TFParams.copy(minParts = minParts)
         }
       )
       .optional()
@@ -150,8 +149,8 @@ object TensorizeInJobParamsParser {
       )
 
     // Parse whether to shuffle the converted training data with the default set to true
-    opt[Boolean]("shuffle")
-      .action((enableShuffle, tensorizeInParams) => tensorizeInParams.copy(enableShuffle = enableShuffle))
+    opt[Boolean](Avro2TFJobParamNames.SHUFFLE)
+      .action((enableShuffle, avro2TFParams) => avro2TFParams.copy(enableShuffle = enableShuffle))
       .optional()
       .text(
         """Optional.
@@ -159,65 +158,56 @@ object TensorizeInJobParamsParser {
       )
 
     // Parse the path to external feature list where the user supplied feature metadata is written
-    opt[String]("external-feature-list-path")
+    opt[String](Avro2TFJobParamNames.EXTERNAL_FEATURE_LIST_PATH)
       .action(
-        (externalFeatureListPath, tensorizeInParams) => tensorizeInParams
+        (externalFeatureListPath, avro2TFParams) => avro2TFParams
           .copy(externalFeaturesListPath = externalFeatureListPath.trim))
       .text(
         """Optional.
           |The path to external feature list where the user supplied feature metadata is written.""".stripMargin
       )
 
-    // Parse the TensorizeIn configuration in JSON format
-    opt[String]("tensorizeIn-config-path")
+    // Parse the Avro2TF configuration in JSON format
+    opt[String](Avro2TFJobParamNames.AVRO2TF_CONFIG_PATH)
       .action(
-        (tensorizeInConfigPath, tensorizeInParams) => {
+        (avro2TFConfigPath, avro2TFParams) => {
 
           var jsonInput = ""
 
           // Read JSON config from local if exists, otherwise read from HDFS
-          if (new File(tensorizeInConfigPath).exists()) {
-            val bufferedSource = Source.fromFile(tensorizeInConfigPath)
+          if (new File(avro2TFConfigPath).exists()) {
+            val bufferedSource = Source.fromFile(avro2TFConfigPath)
             jsonInput = bufferedSource.mkString
             bufferedSource.close()
           } else {
             val fs = FileSystem.get(new JobConf())
-            val path = new Path(tensorizeInConfigPath)
+            val path = new Path(avro2TFConfigPath)
             if (fs.exists(path)) {
               jsonInput = IOUtils.readContentFromHDFS(fs, path)
               fs.close()
             } else {
               throw new IllegalArgumentException(
-                s"Specified avro2tf config path: $tensorizeInConfigPath does not exist in either local or HDFS"
+                s"Specified avro2tf config path: $avro2TFConfigPath does not exist in either local or HDFS"
               )
             }
           }
 
-          // Get the TensorizeIn Configuration
-          val tensorizeInConfiguration = TensorizeInConfigParser.getTensorizeInConfiguration(jsonInput)
+          // Get the Avro2TF Configuration
+          val avro2TFConfiguration = Avro2TFConfigParser.getAvro2TFConfiguration(jsonInput)
 
-          tensorizeInParams.copy(tensorizeInConfig = tensorizeInConfiguration)
+          avro2TFParams.copy(avro2TFConfig = avro2TFConfiguration)
         }
       )
       .text(
         """Required.
-          |The TensorizeIn configuration in JSON format.""".stripMargin
-      )
-
-    // Parse whether to prepare training data or test data
-    opt[Boolean]("train-mode")
-      .action((isTrainMode, tensorizeInParams) => tensorizeInParams.copy(isTrainMode = isTrainMode))
-      .optional()
-      .text(
-        """Optional (deprecated please use execution-mode).
-          |Whether to prepare training data or test data.""".stripMargin
+          |The Avro2TF configuration in JSON format.""".stripMargin
       )
 
     // Parse the execution mode, which decides whether to prepare training, validation, or test data
-    opt[String]("execution-mode")
+    opt[String](Avro2TFJobParamNames.EXECUTION_MODE)
       .action(
-        (executionMode, tensorizeInParams) =>
-          tensorizeInParams.copy(executionMode = TrainingMode.withName(executionMode.toLowerCase))
+        (executionMode, avro2TFParams) =>
+          avro2TFParams.copy(executionMode = TrainingMode.withName(executionMode.toLowerCase))
       )
       .optional()
       .text(
@@ -226,8 +216,8 @@ object TensorizeInJobParamsParser {
       )
 
     // Parse whether to cache the intermediate Spark DataFrame result with default set to false
-    opt[Boolean]("enable-cache")
-      .action((enableCache, tensorizeInParams) => tensorizeInParams.copy(enableCache = enableCache))
+    opt[Boolean](Avro2TFJobParamNames.ENABLE_CACHE)
+      .action((enableCache, avro2TFParams) => avro2TFParams.copy(enableCache = enableCache))
       .optional()
       .text(
         """Optional.
@@ -235,8 +225,8 @@ object TensorizeInJobParamsParser {
       )
 
     // Parse whether to skip the conversion step with default set to false
-    opt[Boolean]("skip-conversion")
-      .action((skipConversion, tensorizeInParams) => tensorizeInParams.copy(skipConversion = skipConversion))
+    opt[Boolean](Avro2TFJobParamNames.SKIP_CONVERSION)
+      .action((skipConversion, avro2TFParams) => avro2TFParams.copy(skipConversion = skipConversion))
       .optional()
       .text(
         """Optional.
@@ -244,26 +234,26 @@ object TensorizeInJobParamsParser {
       )
 
     // Parse the output format of tensorized data, e.g. Avro or TFRecord
-    opt[String]("output-format")
-      .action((outputFormat, tensorizeInParams) => tensorizeInParams.copy(outputFormat = outputFormat))
+    opt[String](Avro2TFJobParamNames.OUTPUT_FORMAT)
+      .action((outputFormat, avro2TFParams) => avro2TFParams.copy(outputFormat = outputFormat))
       .optional()
       .text(
         """Optional.
           |The output format of tensorized data, e.g. Avro or TFRecord.""".stripMargin
       )
 
-    opt[Seq[String]]("extra-columns-to-keep")
-      .action((extraColumns, tensorizeInParams) => tensorizeInParams.copy(extraColumnsToKeep = extraColumns))
+    opt[Seq[String]](Avro2TFJobParamNames.EXTRA_COLUMNS_TO_KEEP)
+      .action((extraColumns, avro2TFParams) => avro2TFParams.copy(extraColumnsToKeep = extraColumns))
       .optional()
       .text(
         """Optional.
           |A list of comma separated column names to specify extra columns to keep.""".stripMargin
       )
 
-    opt[String]("tensors-sharing-feature-lists")
+    opt[String](Avro2TFJobParamNames.TENSORS_SHARING_FEATURE_LISTS)
       .valueName("<tensor>,...,<tensor>;<tensor>,...,<tensor>")
       .action(
-        (tensors, tensorizeInParams) => {
+        (tensors, avro2TFParams) => {
           val tensor_array = tensors.trim().split(";").map(_.split(",").map(_.trim()))
           if (tensor_array.size == 0 || !tensor_array.forall(_.size > 1)) {
             throw new IllegalArgumentException(
@@ -280,7 +270,7 @@ object TensorizeInJobParamsParser {
                   .mkString("; ")
               }")
           }
-          tensorizeInParams.copy(tensorsSharingFeatureLists = tensor_array)
+          avro2TFParams.copy(tensorsSharingFeatureLists = tensor_array)
         }
       )
       .optional()
@@ -291,17 +281,17 @@ object TensorizeInJobParamsParser {
           .stripMargin
       )
 
-    opt[Int]("num-partitions")
-      .action((numPartitions, tensorizeInParams) => tensorizeInParams.copy(numPartitions = numPartitions))
+    opt[Int](Avro2TFJobParamNames.NUM_PARTITIONS)
+      .action((numPartitions, avro2TFParams) => avro2TFParams.copy(numPartitions = numPartitions))
       .optional()
       .text(
         """Optional.
           |The number of partitions""".stripMargin
       )
 
-    opt[String]("partition-field-name")
+    opt[String](Avro2TFJobParamNames.PARTITION_FIELD_NAME)
       .action(
-        (partitionFieldName, tensorizeInParams) => tensorizeInParams
+        (partitionFieldName, avro2TFParams) => avro2TFParams
           .copy(partitionFieldName = partitionFieldName.trim))
       .optional()
       .text(
@@ -309,16 +299,18 @@ object TensorizeInJobParamsParser {
           |The field name to apply partition.""".stripMargin
       )
 
-    opt[Boolean]("enable-term-only-feature-list")
-      .action((termOnlyFeatureList, tensorizeInParams) => tensorizeInParams.copy(termOnlyFeatureList = termOnlyFeatureList))
+    opt[Boolean](Avro2TFJobParamNames.ENABLE_TERM_ONLY_FEATURE_LIST)
+      .action((termOnlyFeatureList, avro2TFParams) => avro2TFParams.copy(termOnlyFeatureList = termOnlyFeatureList))
       .optional()
       .text(
         """Optional.
           |Whether to output term only feature list""".stripMargin
       )
 
-    opt[Boolean]("discard-unknown-entries")
-      .action((discardUnknownEntries, tensorizeInParams) => tensorizeInParams.copy(discardUnknownEntries = discardUnknownEntries))
+    opt[Boolean](Avro2TFJobParamNames.DISCARD_UNKNOWN_ENTRIES)
+      .action(
+        (discardUnknownEntries, avro2TFParams) => avro2TFParams
+          .copy(discardUnknownEntries = discardUnknownEntries))
       .optional()
       .text(
         """Optional.
@@ -327,16 +319,16 @@ object TensorizeInJobParamsParser {
   }
 
   /**
-   * Parse the TensorizeIn job parameters
+   * Parse the Avro2TF job parameters
    *
-   * @param args TensorizeIn command line arguments
-   * @return TensorizeIn parameters
+   * @param args Avro2TF command line arguments
+   * @return Avro2TF parameters
    */
-  def parse(args: Seq[String]): TensorizeInParams = {
+  def parse(args: Seq[String]): Avro2TFParams = {
 
     parser.parse(
       args,
-      TensorizeInParams(
+      Avro2TFParams(
         inputPaths = Seq.empty,
         workingDir = null,
         inputDateRange = Seq.empty,
@@ -345,8 +337,7 @@ object TensorizeInJobParamsParser {
         minParts = -1,
         enableShuffle = false,
         externalFeaturesListPath = "",
-        tensorizeInConfig = null,
-        isTrainMode = true,
+        avro2TFConfig = null,
         executionMode = TrainingMode.training,
         enableCache = false,
         skipConversion = false,
@@ -363,18 +354,12 @@ object TensorizeInJobParamsParser {
         // Check if users only specify either date range or days range
         if (params.inputDateRange.nonEmpty && params.inputDaysRange.nonEmpty) {
           throw new IllegalArgumentException("Please only specify either date range or days range.")
-        }
-        if (!params.isTrainMode && params.executionMode == TrainingMode.training) {
-          params.copy(executionMode = TrainingMode.test)
         } else {
           params
         }
       case None => throw new IllegalArgumentException(
-        s"Parsing the TensorizeIn command line arguments failed.\n" + s"(${
-          args.mkString(", ")
-        }),\n ${
-          parser.usage
-        }")
+        s"Parsing the Avro2TF command line arguments failed.\n" + s"(${args.mkString(", ")}),\n ${parser.usage}"
+      )
     }
   }
 }

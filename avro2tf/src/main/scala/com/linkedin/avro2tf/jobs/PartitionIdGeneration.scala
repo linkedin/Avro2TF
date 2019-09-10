@@ -1,7 +1,8 @@
 package com.linkedin.avro2tf.jobs
 
-import com.linkedin.avro2tf.parsers.TensorizeInParams
-import com.linkedin.avro2tf.utils.{Constants, HashingUtils}
+import com.linkedin.avro2tf.constants.Constants
+import com.linkedin.avro2tf.parsers.Avro2TFParams
+import com.linkedin.avro2tf.utils.HashingUtils
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.expressions.UserDefinedFunction
 import org.apache.spark.sql.functions.{expr, udf}
@@ -15,10 +16,10 @@ object PartitionIdGeneration {
    * The main function to append partition id
    *
    * @param dataFrame Input data Spark DataFrame
-   * @param params TensorizeIn parameters specified by user
+   * @param params Avro2TF parameters specified by user
    * @return A Spark DataFrame
    */
-  def run(dataFrame: DataFrame, params: TensorizeInParams): DataFrame = {
+  def run(dataFrame: DataFrame, params: Avro2TFParams): DataFrame = {
 
     dataFrame
       .withColumn(

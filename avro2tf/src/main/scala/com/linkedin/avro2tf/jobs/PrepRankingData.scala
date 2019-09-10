@@ -4,8 +4,9 @@ import scala.collection.mutable
 
 import com.databricks.spark.avro._
 import com.linkedin.avro2tf.configs.TensorMetadata
-import com.linkedin.avro2tf.helpers.TensorizeInJobHelper
-import com.linkedin.avro2tf.jobs.TensorizeIn.SparseVector
+import com.linkedin.avro2tf.constants.Constants
+import com.linkedin.avro2tf.helpers.Avro2TFJobHelper
+import com.linkedin.avro2tf.jobs.Avro2TF.SparseVector
 import com.linkedin.avro2tf.parsers.{PrepRankingDataParams, PrepRankingDataParamsParser}
 import com.linkedin.avro2tf.utils._
 import io.circe.generic.auto._
@@ -18,7 +19,7 @@ import org.apache.spark.sql.types.{DoubleType, FloatType, IntegerType, LongType,
 import org.slf4j.{Logger, LoggerFactory}
 
 /**
- * Prepare ranking tensor data after TensorizeIn job.
+ * Prepare ranking tensor data after Avro2TF job.
  * The output data should be ready be consumed by TensorflowIn and tf.ranking
  */
 object PrepRankingData {
@@ -45,7 +46,7 @@ object PrepRankingData {
   }
 
   /**
-   * Reading tensor_metadata.json from the TensorizeIn job
+   * Reading tensor_metadata.json from the Avro2TF job
    *
    * @param fs The file system
    * @param path The tensor_metadata.json file path string
@@ -70,7 +71,7 @@ object PrepRankingData {
    * @param spark The spark session
    * @param inputPath The input data path
    * @param params The user input parameter
-   * @param metadata The metadata from TensorizeIn job
+   * @param metadata The metadata from Avro2TF job
    */
   def prepareRanking(
     spark: SparkSession,
@@ -133,7 +134,7 @@ object PrepRankingData {
     }
 
     // write to disk
-    val repartitionDf = TensorizeInJobHelper
+    val repartitionDf = Avro2TFJobHelper
       .repartitionData(truncateDf, params.numOutputFiles, params.enableShuffle)
     repartitionDf.write.mode(SaveMode.Overwrite).avro(params.outputDataPath)
 

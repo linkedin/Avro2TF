@@ -1,10 +1,11 @@
 package com.linkedin.avro2tf.jobs
 
 import com.linkedin.avro2tf.configs.Feature
-import com.linkedin.avro2tf.helpers.TensorizeInConfigHelper
-import com.linkedin.avro2tf.parsers.TensorizeInParams
-import com.linkedin.avro2tf.utils.{CommonUtils, Constants}
-import com.linkedin.avro2tf.utils.Constants._
+import com.linkedin.avro2tf.constants.Constants
+import com.linkedin.avro2tf.helpers.Avro2TFConfigHelper
+import com.linkedin.avro2tf.parsers.Avro2TFParams
+import com.linkedin.avro2tf.utils.CommonUtils
+import com.linkedin.avro2tf.constants.Constants._
 import org.apache.spark.sql.expressions.UserDefinedFunction
 import org.apache.spark.sql.functions.{col, expr, struct, udf}
 import org.apache.spark.sql.{Column, DataFrame, Row}
@@ -19,13 +20,13 @@ object FeatureExtraction {
    * The main function to perform Feature Extraction job
    *
    * @param dataFrame Input data Spark DataFrame
-   * @param params TensorizeIn parameters specified by user
+   * @param params Avro2TF parameters specified by user
    * @return A Spark DataFrame
    */
-  def run(dataFrame: DataFrame, params: TensorizeInParams): DataFrame = {
+  def run(dataFrame: DataFrame, params: Avro2TFParams): DataFrame = {
 
-    // Concatenate features and labels of TensorizeIn configuration
-    val featuresAndLabels = TensorizeInConfigHelper.concatFeaturesAndLabels(params)
+    // Concatenate features and labels of Avro2TF configuration
+    val featuresAndLabels = Avro2TFConfigHelper.concatFeaturesAndLabels(params)
 
     // Get a sequence of tensor columns based on column expressions and column configurations from input feature information
     val tensorColumns = getTensorColumns(dataFrame, featuresAndLabels)
@@ -39,10 +40,10 @@ object FeatureExtraction {
   /**
    * Get the extra columns that users want to keep besides the tensor columns
    *
-   * @param params TensorizeIn parameters specified by user
+   * @param params Avro2TF parameters specified by user
    * @return A Spark DataFrame
    */
-  private def getExtraColumns(params: TensorizeInParams): Seq[Column] = {
+  private def getExtraColumns(params: Avro2TFParams): Seq[Column] = {
     params.extraColumnsToKeep.map {
       exprString => if(exprString.contains(Constants.COLUMN_NAME_ALIAS_DELIMITER)){
         val exprAndName = exprString.trim.split(Constants.COLUMN_NAME_ALIAS_DELIMITER)
@@ -57,7 +58,7 @@ object FeatureExtraction {
    * Get a sequence of tensor columns based on column expressions and column configurations from input feature information
    *
    * @param dataFrame Input data Spark DataFrame
-   * @param featuresAndLabels A sequence of features and labels from TensorizeIn configuration
+   * @param featuresAndLabels A sequence of features and labels from Avro2TF configuration
    * @return A sequence of Spark columns
    */
   private def getTensorColumns(dataFrame: DataFrame, featuresAndLabels: Seq[Feature]): Seq[Column] = {
@@ -121,7 +122,7 @@ object FeatureExtraction {
               }.map {
                 nameTermValue =>
                   // Construct a NameTermValue (NTV) tuple for later conversion to SparseVector
-                  TensorizeIn.NameTermValue(
+                  Avro2TF.NameTermValue(
                     nameTermValue.getAs[String](NTV_NAME),
                     nameTermValue.getAs[String](NTV_TERM),
                     // Use a common utility function to convert any data type to float
@@ -129,7 +130,7 @@ object FeatureExtraction {
                   )
               }
             } else {
-              Seq.empty[TensorizeIn.NameTermValue]
+              Seq.empty[Avro2TF.NameTermValue]
             }
         }.toSeq
       }

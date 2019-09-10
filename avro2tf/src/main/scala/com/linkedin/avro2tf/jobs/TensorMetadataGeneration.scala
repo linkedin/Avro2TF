@@ -2,14 +2,15 @@ package com.linkedin.avro2tf.jobs
 
 import java.nio.charset.StandardCharsets.UTF_8
 
-import com.linkedin.avro2tf.configs.{DataType, Feature, TensorMetadata, TensorizeInTensorMetadata}
+import com.linkedin.avro2tf.configs.{DataType, Feature, TensorMetadata, Avro2TFTensorMetadata}
 import scala.collection.mutable
 import scala.io.Source
 
-import com.linkedin.avro2tf.helpers.TensorizeInConfigHelper
-import com.linkedin.avro2tf.parsers.TensorizeInParams
-import com.linkedin.avro2tf.utils.Constants._
-import com.linkedin.avro2tf.utils.{CommonUtils, Constants, IOUtils}
+import com.linkedin.avro2tf.constants.Constants
+import com.linkedin.avro2tf.helpers.Avro2TFConfigHelper
+import com.linkedin.avro2tf.parsers.Avro2TFParams
+import com.linkedin.avro2tf.constants.Constants._
+import com.linkedin.avro2tf.utils.{CommonUtils, IOUtils}
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.functions._
@@ -26,9 +27,9 @@ object TensorMetadataGeneration {
    * The main function to perform Tensor Metadata Generation job
    *
    * @param dataFrame Input data Spark DataFrame
-   * @param params TensorizeIn parameters specified by user
+   * @param params Avro2TF parameters specified by user
    */
-  def run(dataFrame: DataFrame, params: TensorizeInParams): Unit = {
+  def run(dataFrame: DataFrame, params: Avro2TFParams): Unit = {
 
     // NOTE: Intellij does not realise this import is used.
     import com.linkedin.avro2tf.configs.JsonCodecs._
@@ -50,7 +51,7 @@ object TensorMetadataGeneration {
     ).toSet
 
     var featuresTensorMetadata = generateTensorMetadata(
-      params.tensorizeInConfig.features,
+      params.avro2TFConfig.features,
       colsToFeatureCardinalityMapping,
       ntvColumns)
     if (params.partitionFieldName.nonEmpty) {
@@ -63,12 +64,12 @@ object TensorMetadataGeneration {
     }
 
     val labelsTensorMetadata = generateTensorMetadata(
-      params.tensorizeInConfig.labels,
+      params.avro2TFConfig.labels,
       colsToFeatureCardinalityMapping,
       ntvColumns)
 
-    // Serialize TensorizeIn Tensor Metadata to JSON String
-    val serializedTensorMetadata = TensorizeInTensorMetadata(featuresTensorMetadata, labelsTensorMetadata).asJson
+    // Serialize Avro2TF Tensor Metadata to JSON String
+    val serializedTensorMetadata = Avro2TFTensorMetadata(featuresTensorMetadata, labelsTensorMetadata).asJson
       .toString()
     println(serializedTensorMetadata)
     IOUtils
@@ -83,12 +84,12 @@ object TensorMetadataGeneration {
   /**
    * Get the cardinality mapping of columns with feature list
    *
-   * @param params TensorizeIn parameters specified by user
+   * @param params Avro2TF parameters specified by user
    * @param fileSystem A file system
    * @return A mapping of column name to its feature cardinality mapping
    */
   private def getColsWithFeatureListCardinalityMapping(
-    params: TensorizeInParams,
+    params: Avro2TFParams,
     fileSystem: FileSystem): Map[String, Long] = {
 
     if (!params.workingDir.featureListPath.isEmpty) {
@@ -118,13 +119,13 @@ object TensorMetadataGeneration {
   /**
    * Get the cardinality mapping of columns with hash information
    *
-   * @param params TensorizeIn parameters specified by user
+   * @param params Avro2TF parameters specified by user
    * @return A mapping of column name to its cardinality
    */
-  private def getColsWithHashInfoCardinalityMapping(params: TensorizeInParams): Map[String, Long] = {
+  private def getColsWithHashInfoCardinalityMapping(params: Avro2TFParams): Map[String, Long] = {
 
     // mapValues is lazy so use map to be safe for Spark
-    TensorizeInConfigHelper.getColsHashInfo(params).map { case (col, hashInfo) =>
+    Avro2TFConfigHelper.getColsHashInfo(params).map { case (col, hashInfo) =>
       col -> hashInfo.hashBucketSize.toLong
     }
   }
@@ -133,14 +134,14 @@ object TensorMetadataGeneration {
    * Get a mapping of column name of Integer or Long type to its cardinality
    *
    * @param dataFrame Input data Spark DataFrame
-   * @param params TensorizeIn parameters specified by user
+   * @param params Avro2TF parameters specified by user
    * @return A mapping of column name to its cardinality
    */
   private def getColsOfIntOrLongCardinalityMapping(
     dataFrame: DataFrame,
-    params: TensorizeInParams): Map[String, Long] = {
+    params: Avro2TFParams): Map[String, Long] = {
 
-    val intOrLongColNames = TensorizeInConfigHelper.concatFeaturesAndLabels(params)
+    val intOrLongColNames = Avro2TFConfigHelper.concatFeaturesAndLabels(params)
       .map(featureOrLabel => featureOrLabel.outputTensorInfo.name)
       .filter(
         columnName => dataFrame.schema(columnName).dataType.isInstanceOf[IntegerType] ||

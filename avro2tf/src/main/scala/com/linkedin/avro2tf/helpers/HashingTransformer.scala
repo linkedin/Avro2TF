@@ -1,9 +1,9 @@
 package com.linkedin.avro2tf.helpers
 
 import com.linkedin.avro2tf.configs.{Combiner, HashInfo}
-import com.linkedin.avro2tf.jobs.TensorizeIn
-import com.linkedin.avro2tf.parsers.TensorizeInParams
-import com.linkedin.avro2tf.utils.Constants._
+import com.linkedin.avro2tf.jobs.Avro2TF
+import com.linkedin.avro2tf.parsers.Avro2TFParams
+import com.linkedin.avro2tf.constants.Constants._
 import com.linkedin.avro2tf.utils.{CommonUtils, HashingUtils}
 
 import org.apache.spark.sql.expressions.UserDefinedFunction
@@ -21,13 +21,13 @@ object HashingTransformer {
    * The main function to perform hashing transformation
    *
    * @param dataFrame Input data Spark DataFrame
-   * @param params TensorizeIn parameters specified by user
+   * @param params Avro2TF parameters specified by user
    * @return A Spark DataFrame
    */
-  def hashTransform(dataFrame: DataFrame, params: TensorizeInParams): DataFrame = {
+  def hashTransform(dataFrame: DataFrame, params: Avro2TFParams): DataFrame = {
 
-    val colsHashInfo = TensorizeInConfigHelper.getColsHashInfo(params)
-    val outputTensorSparsity = TensorizeInConfigHelper.getOutputTensorSparsity(params)
+    val colsHashInfo = Avro2TFConfigHelper.getColsHashInfo(params)
+    val outputTensorSparsity = Avro2TFConfigHelper.getOutputTensorSparsity(params)
 
     val hashedColumns = colsHashInfo.map {
       case (columnName, hashInfo) =>
@@ -68,7 +68,7 @@ object HashingTransformer {
     udf {
       ntvs: Seq[Row] => {
         val idValues = hashNTVToIdValues(ntvs, hashInfo)
-        TensorizeIn.SparseVector(idValues.map(_.id), idValues.map(_.value))
+        Avro2TF.SparseVector(idValues.map(_.id), idValues.map(_.value))
       }
     }
   }
@@ -95,12 +95,12 @@ object HashingTransformer {
    * @param hashInfo Hashing info specified by user
    * @return A seq of IdValue
    */
-  private def hashNTVToIdValues(ntvs: Seq[Row], hashInfo: HashInfo): Seq[TensorizeIn.IdValue] = {
+  private def hashNTVToIdValues(ntvs: Seq[Row], hashInfo: HashInfo): Seq[Avro2TF.IdValue] = {
 
     if (ntvs == null || ntvs.isEmpty) {
 
       // if bag is empty put a dummy one with id as the unknown Id (last id), in hashing case, the num of hash buckets
-      Seq(TensorizeIn.IdValue(hashInfo.hashBucketSize, 0))
+      Seq(Avro2TF.IdValue(hashInfo.hashBucketSize, 0))
     } else {
       {
         ntvs.flatMap {
@@ -110,7 +110,7 @@ object HashingTransformer {
             val value = ntv.getAs[Float](NTV_VALUE)
 
             HashingUtils.multiHash(s"$name,$term", hashInfo.numHashFunctions, hashInfo.hashBucketSize)
-              .map(id => TensorizeIn.IdValue(id, value))
+              .map(id => Avro2TF.IdValue(id, value))
           }
         }.groupBy(_.id).map {
           group => {

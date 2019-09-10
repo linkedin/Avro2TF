@@ -6,7 +6,7 @@ import java.time.temporal.ChronoUnit
 import java.time.{LocalDate, LocalDateTime}
 
 import com.databricks.spark.avro.SchemaConverters
-import com.linkedin.avro2tf.utils.Constants._
+import com.linkedin.avro2tf.constants.Constants._
 import org.apache.avro.SchemaBuilder
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.sql.types.StructType

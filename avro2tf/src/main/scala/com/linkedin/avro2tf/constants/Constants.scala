@@ -1,7 +1,7 @@
-package com.linkedin.avro2tf.utils
+package com.linkedin.avro2tf.constants
 
 /**
- * Constants used by TensorizeIn
+ * Constants used by Avro2TF
  *
  */
 object Constants {
@@ -54,7 +54,6 @@ object Constants {
   final val VALUES = "values"
   final val WHITELIST = "whitelist"
   final val WILD_CARD = "*"
-  final val RANK_DATA = "ranking"
   final val CONTENT_FEATURE_LIST = "content_feature_list"
   final val FEATURES = "features"
   final val LABELS = "labels"

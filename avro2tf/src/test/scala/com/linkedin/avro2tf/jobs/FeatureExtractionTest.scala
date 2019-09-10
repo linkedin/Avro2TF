@@ -3,11 +3,11 @@ package com.linkedin.avro2tf.jobs
 import java.io.File
 
 import com.databricks.spark.avro._
-import com.linkedin.avro2tf.helpers.TensorizeInJobHelper
-import com.linkedin.avro2tf.parsers.TensorizeInJobParamsParser
+import com.linkedin.avro2tf.constants.Avro2TFJobParamNames
+import com.linkedin.avro2tf.helpers.Avro2TFJobHelper
+import com.linkedin.avro2tf.parsers.Avro2TFJobParamsParser
 import com.linkedin.avro2tf.utils.ConstantsForTest._
 import com.linkedin.avro2tf.utils.{TestUtil, WithLocalSparkSession}
-
 import org.apache.commons.io.FileUtils
 import org.apache.spark.sql.types.StringType
 import org.testng.Assert._
@@ -22,29 +22,29 @@ class FeatureExtractionTest extends WithLocalSparkSession {
   @Test
   def testFeatureExtraction(): Unit = {
 
-    val tensorizeInConfig = new File(
-      getClass.getClassLoader.getResource(TENSORIZEIN_CONFIG_PATH_VALUE_SAMPLE).getFile
+    val avro2TFConfig = new File(
+      getClass.getClassLoader.getResource(AVRO2TF_CONFIG_PATH_VALUE_SAMPLE).getFile
     ).getAbsolutePath
     FileUtils.deleteDirectory(new File(WORKING_DIRECTORY_FEATURE_EXTRACTION_TEXT))
 
-    val params = Array(
-      INPUT_PATHS_NAME, INPUT_TEXT_FILE_PATHS,
-      WORKING_DIRECTORY_NAME, WORKING_DIRECTORY_FEATURE_EXTRACTION_TEXT,
-      TENSORIZEIN_CONFIG_PATH_NAME, tensorizeInConfig,
-      EXTRA_COLUMNS_TO_KEEP_NAME, EXTRA_COLUMNS_TO_KEEP_VALUE
+    val params = Map(
+      Avro2TFJobParamNames.INPUT_PATHS -> INPUT_TEXT_FILE_PATHS,
+      Avro2TFJobParamNames.WORKING_DIR -> WORKING_DIRECTORY_FEATURE_EXTRACTION_TEXT,
+      Avro2TFJobParamNames.AVRO2TF_CONFIG_PATH -> avro2TFConfig,
+      Avro2TFJobParamNames.EXTRA_COLUMNS_TO_KEEP -> EXTRA_COLUMNS_TO_KEEP_VALUE
     )
 
     val dataFrame = session.read.avro(INPUT_TEXT_FILE_PATHS)
-    val tensorizeInParams = TensorizeInJobParamsParser.parse(params)
+    val avro2TFParams = Avro2TFJobParamsParser.parse(TestUtil.convertParamMapToParamList(params))
 
-    val result = FeatureExtraction.run(dataFrame, tensorizeInParams)
+    val result = FeatureExtraction.run(dataFrame, avro2TFParams)
 
-    TensorizeInJobHelper.saveDataToHDFS(result, tensorizeInParams)
+    Avro2TFJobHelper.saveDataToHDFS(result, avro2TFParams)
 
-    // Check if the actual columns of the result DataFrame match those specified in TensorizeIn parameters
-    TestUtil.checkOutputColumns(result, tensorizeInParams)
+    // Check if the actual columns of the result DataFrame match those specified in Avro2TF parameters
+    TestUtil.checkOutputColumns(result, avro2TFParams)
     // Check a sample feature is successfully extracted to an output column
     assertTrue(result.schema(FEATURE_WORD_SEQ_COL_NAME).dataType.isInstanceOf[StringType])
-    assertTrue(new File(s"${tensorizeInParams.workingDir.trainingDataPath}/_SUCCESS").exists())
+    assertTrue(new File(s"${avro2TFParams.workingDir.trainingDataPath}/_SUCCESS").exists())
   }
 }
