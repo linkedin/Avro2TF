@@ -71,6 +71,7 @@ object ConstantsForTest {
   final val WORKING_DIRECTORY_PARTITION_TEST = "/tmp/partition-test"
   final val EXPECTED_FEATURE_LIST_W_COUNTS_PATH = "data/share_feat_list/feat_lists_w_counts"
   final val EXPECTED_TENSOR_METADATA_GENERATED_JSON_PATH_TEXT = "metadata/tensor_metadata_text_1.json"
+  final val EXPECTED_TENSOR_METADATA_MOVIELENS_RANK = "metadata/tensor_metadata_movielens_rank.json"
   final val EXPECTED_TENSOR_METADATA_WITH_PARTITION_ID = "metadata/tensor_metadata_with_partition_id.json"
   final val EXPECTED_TENSOR_METADATA_WITHOUT_INT_FEATURES_GENERATED_JSON_PATH_TEXT =
     "metadata/tensor_metadata_text_without_int_features.json"

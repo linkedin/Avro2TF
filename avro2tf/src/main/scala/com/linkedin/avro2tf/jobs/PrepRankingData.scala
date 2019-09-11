@@ -15,7 +15,7 @@ import io.circe.syntax._
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.sql._
 import org.apache.spark.sql.functions._
-import org.apache.spark.sql.types.{DoubleType, FloatType, IntegerType, LongType, StructType, DataType => ADataType}
+import org.apache.spark.sql.types.{ArrayType, DoubleType, FloatType, IntegerType, LongType, StringType, StructType, DataType => ADataType}
 import org.slf4j.{Logger, LoggerFactory}
 
 /**
@@ -230,6 +230,8 @@ object PrepRankingData {
       filledArray.take(groupListMaxSize)
     }
 
+    def takeArrayFunc[T] = (array: Seq[Seq[T]]) => array.take(groupListMaxSize)
+
     def takeSpFunc = (array: Seq[SparseVector]) => array.take(groupListMaxSize)
 
     val padValue = if (isLabel) {
@@ -243,7 +245,13 @@ object PrepRankingData {
       case _: DoubleType => udf(takeFunc[Double](padValue.toDouble))
       case _: IntegerType => udf(takeFunc[Int](padValue.toInt))
       case _: LongType => udf(takeFunc[Long](padValue.toLong))
+      case _: StringType => udf(takeFunc[String](""))
       case _: StructType => udf(takeSpFunc)
+      case ArrayType(FloatType, _) => udf(takeArrayFunc[Float])
+      case ArrayType(DoubleType, _) => udf(takeArrayFunc[Double])
+      case ArrayType(IntegerType, _) => udf(takeArrayFunc[Int])
+      case ArrayType(LongType, _) => udf(takeArrayFunc[Long])
+      case ArrayType(StringType, _) => udf(takeArrayFunc[String])
       case _ => throw new UnsupportedOperationException(s"Cannot support type: $dtype")
     }
   }
