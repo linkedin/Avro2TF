@@ -14,6 +14,40 @@
     },
     {
       "inputFeatureInfo": {
+        "columnExpr": "movieId"
+      },
+      "outputTensorInfo": {
+        "name": "mid",
+        "dtype": "int",
+        "shape": [],
+        "isDocumentFeature": false
+      }
+    },
+    {
+      "inputFeatureInfo": {
+        "columnExpr": "CAST(movieId as String)"
+      },
+      "outputTensorInfo": {
+        "name": "movieIdString",
+        "dtype": "string",
+        "shape": [],
+        "isDocumentFeature": true
+      }
+    },
+    {
+      "inputFeatureInfo": {
+        "columnExpr": "genreFeatures.term"
+      },
+      "outputTensorInfo": {
+        "name": "genreFeaturesTerms",
+        "dtype": "string",
+        "shape": [
+          10
+        ]
+      }
+    },
+    {
+      "inputFeatureInfo": {
         "columnExpr": "movieId",
         "transformConfig": {
           "hashInfo": {
@@ -28,7 +62,7 @@
         "shape": [
           4
         ],
-        "isDocumentFeature": false
+        "isDocumentFeature": true
       }
     },
     {
@@ -39,7 +73,7 @@
         "name": "genreFeatures",
         "dtype": "float",
         "shape": [],
-        "isSparse" : true
+        "isSparse": true
       }
     },
     {
@@ -67,7 +101,7 @@
         "name": "genreFeatures_movieLatentFactorFeatures",
         "dtype": "float",
         "shape": [],
-        "isSparse" : true
+        "isSparse": true
       }
     }
   ],

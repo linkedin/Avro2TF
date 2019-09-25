@@ -2,9 +2,12 @@ package com.linkedin.avro2tf.jobs
 
 import java.io.File
 
+import scala.io.Source
+
 import com.linkedin.avro2tf.constants.{Avro2TFJobParamNames, Constants, PrepRankingJobParamNames}
 import com.linkedin.avro2tf.parsers.{Avro2TFJobParamsParser, PrepRankingDataParamsParser}
 import com.linkedin.avro2tf.utils.ConstantsForTest._
+import com.linkedin.avro2tf.utils.TestUtil.removeWhiteSpace
 import org.testng.annotations.Test
 import com.linkedin.avro2tf.utils.{TestUtil, WithLocalSparkSession}
 import org.apache.commons.io.FileUtils
@@ -48,8 +51,16 @@ class PrepRankingDataTest extends WithLocalSparkSession {
     val params = PrepRankingDataParamsParser.parse(TestUtil.convertParamMapToParamList(prepRankingParams))
     PrepRankingData.run(session, params)
 
+    val outputMetadataFile = s"$metadataOutputPath/${Constants.TENSOR_METADATA_FILE_NAME}"
     assertTrue(new File(s"$dataOutputPath/_SUCCESS").exists())
-    assertTrue(new File(s"$metadataOutputPath/${Constants.TENSOR_METADATA_FILE_NAME}").exists())
+    assertTrue(new File(outputMetadataFile).exists())
     assertTrue(new File(s"$metadataOutputPath/${Constants.CONTENT_FEATURE_LIST}").exists())
+
+    // Check if tensor metadata JSON file is correctly generated
+    val expectedTensorMetadata = getClass.getClassLoader.getResource(EXPECTED_TENSOR_METADATA_MOVIELENS_RANK).getFile
+    assertEquals(
+      removeWhiteSpace(Source.fromFile(outputMetadataFile).mkString),
+      removeWhiteSpace(Source.fromFile(expectedTensorMetadata).mkString)
+    )
   }
 }

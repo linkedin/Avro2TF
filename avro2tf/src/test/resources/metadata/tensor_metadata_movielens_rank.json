@@ -1,0 +1,79 @@
+{
+  "features" : [
+    {
+      "name" : "mid",
+      "dtype" : "int",
+      "shape" : [
+      ],
+      "cardinality" : 112852,
+      "isSparse" : false,
+      "isDocumentFeature" : false
+    },
+    {
+      "name" : "movieIdString",
+      "dtype" : "string",
+      "shape" : [
+        2
+      ],
+      "cardinality" : null,
+      "isSparse" : false,
+      "isDocumentFeature" : true
+    },
+    {
+      "name" : "genreFeaturesTerms",
+      "dtype" : "string",
+      "shape" : [
+        2,
+        10
+      ],
+      "cardinality" : null,
+      "isSparse" : false,
+      "isDocumentFeature" : true
+    },
+    {
+      "name" : "movieId_hashed",
+      "dtype" : "int",
+      "shape" : [
+        2,
+        4
+      ],
+      "cardinality" : 1000,
+      "isSparse" : false,
+      "isDocumentFeature" : true
+    },
+    {
+      "name" : "genreFeatures",
+      "dtype" : "float",
+      "shape" : [
+        2,
+        20
+      ],
+      "cardinality" : null,
+      "isSparse" : true,
+      "isDocumentFeature" : true
+    },
+    {
+      "name" : "genreFeatures_movieLatentFactorFeatures",
+      "dtype" : "float",
+      "shape" : [
+        2,
+        100
+      ],
+      "cardinality" : null,
+      "isSparse" : true,
+      "isDocumentFeature" : true
+    }
+  ],
+  "labels" : [
+    {
+      "name" : "response",
+      "dtype" : "double",
+      "shape" : [
+        2
+      ],
+      "cardinality" : null,
+      "isSparse" : false,
+      "isDocumentFeature" : true
+    }
+  ]
+}
