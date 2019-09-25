@@ -19,6 +19,7 @@ case class Avro2TFTensorMetadata(features: Seq[TensorMetadata], labels: Seq[Tens
  * @param shape Shape of a tensor
  * @param cardinality Optional cardinality of a tensor
  * @param isSparse If it is a sparse tensor
+ * @param isDocumentFeature If it is a document feature
  */
 case class TensorMetadata(
   name: String,
