@@ -209,12 +209,12 @@ object CommonUtils {
    * Convert  a Seq of Id-value pairs to one dense value array
    *
    * @param idValues A Seq of Id-value pairs
-   * @param cardinality The cardinality of Ids
+   * @param numUniqueValues The numUniqueValues of Ids
    * @return One dense value array
    */
-  def idValuesToDense(idValues: Seq[Avro2TF.IdValue], cardinality: Int): Seq[Float] = {
+  def idValuesToDense(idValues: Seq[Avro2TF.IdValue], numUniqueValues: Int): Seq[Float] = {
 
-    val values = new Array[Float](cardinality)
+    val values = new Array[Float](numUniqueValues)
     idValues.foreach(idValue => values(idValue.id.toInt) = idValue.value)
     values.toSeq
   }

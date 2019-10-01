@@ -12,7 +12,7 @@ allprojects {
   apply plugin: "idea"
 
   group = "com.linkedin.avro2tf"
-  project.version = "2.0.1"
+  project.version = "2.1.0"
   repositories {
     jcenter()
     mavenCentral()

@@ -3,56 +3,56 @@
     "name" : "fruits_day1",
     "dtype" : "float",
     "shape" : [ 7 ],
-    "cardinality" : null,
+    "numUniqueValues" : null,
     "isSparse" : true,
     "isDocumentFeature": true
   }, {
     "name" : "fruits_day2",
     "dtype" : "float",
     "shape" : [ 5 ],
-    "cardinality" : null,
+    "numUniqueValues" : null,
     "isSparse" : true,
     "isDocumentFeature": true
   }, {
     "name" : "fruits_day3",
     "dtype" : "float",
     "shape" : [ 4 ],
-    "cardinality" : null,
+    "numUniqueValues" : null,
     "isSparse" : true,
     "isDocumentFeature": true
   }, {
     "name" : "fruits_day4",
     "dtype" : "float",
     "shape" : [ 6 ],
-    "cardinality" : null,
+    "numUniqueValues" : null,
     "isSparse" : true,
     "isDocumentFeature": true
   }, {
     "name" : "comments_before",
     "dtype" : "long",
     "shape" : [ -1 ],
-    "cardinality" : 13,
+    "numUniqueValues" : 13,
     "isSparse" : false,
     "isDocumentFeature": true
   }, {
     "name" : "send_platform",
     "dtype" : "long",
     "shape" : [ ],
-    "cardinality" : 4,
+    "numUniqueValues" : 4,
     "isSparse" : false,
     "isDocumentFeature": true
   }, {
     "name" : "receive_platform",
     "dtype" : "long",
     "shape" : [ ],
-    "cardinality" : 4,
+    "numUniqueValues" : 4,
     "isSparse" : false,
     "isDocumentFeature": true
   }, {
     "name" : "partitionId",
     "dtype" : "int",
     "shape" : [ ],
-    "cardinality" : 100,
+    "numUniqueValues" : 100,
     "isSparse" : false,
     "isDocumentFeature": true
   } ],
@@ -60,7 +60,7 @@
     "name" : "comments_after",
     "dtype" : "long",
     "shape" : [ -1 ],
-    "cardinality" : 11,
+    "numUniqueValues" : 11,
     "isSparse" : false,
     "isDocumentFeature": true
   } ]

@@ -35,24 +35,24 @@ object TensorMetadataGeneration {
     import com.linkedin.avro2tf.configs.JsonCodecs._
 
     val fileSystem = FileSystem.get(dataFrame.sparkSession.sparkContext.hadoopConfiguration)
-    val colsWithHashInfoCardinalityMapping = getColsWithHashInfoCardinalityMapping(params)
-    val colsToFeatureCardinalityMapping: Map[String, Long] =
-      getColsWithFeatureListCardinalityMapping(params, fileSystem) ++
-        getColsOfIntOrLongCardinalityMapping(dataFrame, params) ++
-        colsWithHashInfoCardinalityMapping
+    val colsWithHashInfoNumUniqueValuesMapping = getColsWithHashInfoNumUniqueValuesMapping(params)
+    val colsToFeatureNumUniqueValuesMapping: Map[String, Long] =
+      getColsWithFeatureListNumUniqueValuesMapping(params, fileSystem) ++
+        getColsOfIntOrLongNumUniqueValuesMapping(dataFrame, params) ++
+        colsWithHashInfoNumUniqueValuesMapping
 
     val ntvColumns = dataFrame.columns.filter(
       colName => CommonUtils.isArrayOfNTV(dataFrame.schema(colName).dataType) ||
 
         // after hashing, may already be SparseVector or array of floats
-        (colsWithHashInfoCardinalityMapping.contains(colName) &&
+        (colsWithHashInfoNumUniqueValuesMapping.contains(colName) &&
           (CommonUtils.isArrayOfFloat(dataFrame.schema(colName).dataType) ||
             CommonUtils.isSparseVector(dataFrame.schema(colName).dataType)))
     ).toSet
 
     var featuresTensorMetadata = generateTensorMetadata(
       params.avro2TFConfig.features,
-      colsToFeatureCardinalityMapping,
+      colsToFeatureNumUniqueValuesMapping,
       ntvColumns)
     if (params.partitionFieldName.nonEmpty) {
       featuresTensorMetadata = featuresTensorMetadata :+ TensorMetadata(
@@ -65,7 +65,7 @@ object TensorMetadataGeneration {
 
     val labelsTensorMetadata = generateTensorMetadata(
       params.avro2TFConfig.labels,
-      colsToFeatureCardinalityMapping,
+      colsToFeatureNumUniqueValuesMapping,
       ntvColumns)
 
     // Serialize Avro2TF Tensor Metadata to JSON String
@@ -82,20 +82,20 @@ object TensorMetadataGeneration {
   }
 
   /**
-   * Get the cardinality mapping of columns with feature list
+   * Get the numUniqueValues mapping of columns with feature list
    *
    * @param params Avro2TF parameters specified by user
    * @param fileSystem A file system
-   * @return A mapping of column name to its feature cardinality mapping
+   * @return A mapping of column name to its feature numUniqueValues mapping
    */
-  private def getColsWithFeatureListCardinalityMapping(
+  private def getColsWithFeatureListNumUniqueValuesMapping(
     params: Avro2TFParams,
     fileSystem: FileSystem): Map[String, Long] = {
 
     if (!params.workingDir.featureListPath.isEmpty) {
       // Get list statuses and block locations of the feature list files from the given path
       val featureListFiles = fileSystem.listFiles(new Path(params.workingDir.featureListPath), ENABLE_RECURSIVE)
-      val colsWithFeatureListCardinalityMapping = new mutable.HashMap[String, Long]
+      val colsWithFeatureListNumUniqueValuesMapping = new mutable.HashMap[String, Long]
       val discardUNK = if (params.discardUnknownEntries) 0 else 1
 
       while (featureListFiles.hasNext) {
@@ -104,25 +104,25 @@ object TensorMetadataGeneration {
         // Get the column name of feature list
         val columnName = sourcePath.getName
 
-        colsWithFeatureListCardinalityMapping
+        colsWithFeatureListNumUniqueValuesMapping
           .put(
             columnName,
             Source.fromInputStream(fileSystem.open(sourcePath), UTF_8.name()).getLines().size + discardUNK)
       }
 
-      colsWithFeatureListCardinalityMapping.toMap
+      colsWithFeatureListNumUniqueValuesMapping.toMap
     } else {
       Map.empty
     }
   }
 
   /**
-   * Get the cardinality mapping of columns with hash information
+   * Get the numUniqueValues mapping of columns with hash information
    *
    * @param params Avro2TF parameters specified by user
-   * @return A mapping of column name to its cardinality
+   * @return A mapping of column name to its numUniqueValues
    */
-  private def getColsWithHashInfoCardinalityMapping(params: Avro2TFParams): Map[String, Long] = {
+  private def getColsWithHashInfoNumUniqueValuesMapping(params: Avro2TFParams): Map[String, Long] = {
 
     // mapValues is lazy so use map to be safe for Spark
     Avro2TFConfigHelper.getColsHashInfo(params).map { case (col, hashInfo) =>
@@ -131,13 +131,13 @@ object TensorMetadataGeneration {
   }
 
   /**
-   * Get a mapping of column name of Integer or Long type to its cardinality
+   * Get a mapping of column name of Integer or Long type to its numUniqueValues
    *
    * @param dataFrame Input data Spark DataFrame
    * @param params Avro2TF parameters specified by user
-   * @return A mapping of column name to its cardinality
+   * @return A mapping of column name to its numUniqueValues
    */
-  private def getColsOfIntOrLongCardinalityMapping(
+  private def getColsOfIntOrLongNumUniqueValuesMapping(
     dataFrame: DataFrame,
     params: Avro2TFParams): Map[String, Long] = {
 
@@ -168,19 +168,19 @@ object TensorMetadataGeneration {
    * The main function to generate Tensor Metadata
    *
    * @param featuresOrLabels A sequence of features or labels
-   * @param colsToFeatureCardinalityMapping A mapping of column name to its cardinality
+   * @param colsToFeatureNumUniqueValuesMapping A mapping of column name to its numUniqueValues
    * @return A sequence of Tensor metadata
    */
   private def generateTensorMetadata(
     featuresOrLabels: Seq[Feature],
-    colsToFeatureCardinalityMapping: Map[String, Long],
+    colsToFeatureNumUniqueValuesMapping: Map[String, Long],
     ntvColumns: Set[String]): Seq[TensorMetadata] = {
 
     featuresOrLabels.map {
       featureOrLabel =>
-        val cardinality = colsToFeatureCardinalityMapping.get(featureOrLabel.outputTensorInfo.name)
+        val numUniqueValues = colsToFeatureNumUniqueValuesMapping.get(featureOrLabel.outputTensorInfo.name)
         val shape = if (ntvColumns.contains(featureOrLabel.outputTensorInfo.name)) {
-          cardinality.fold(featureOrLabel.outputTensorInfo.shape)(featureOrLabel.outputTensorInfo.shape :+ _.toInt)
+          numUniqueValues.fold(featureOrLabel.outputTensorInfo.shape)(featureOrLabel.outputTensorInfo.shape :+ _.toInt)
         } else {
           featureOrLabel.outputTensorInfo.shape
         }
@@ -189,7 +189,7 @@ object TensorMetadataGeneration {
           name = featureOrLabel.outputTensorInfo.name,
           dtype = featureOrLabel.outputTensorInfo.dtype,
           shape = shape,
-          cardinality = if (ntvColumns.contains(featureOrLabel.outputTensorInfo.name)) None else cardinality,
+          numUniqueValues = if (ntvColumns.contains(featureOrLabel.outputTensorInfo.name)) None else numUniqueValues,
           isSparse = featureOrLabel.outputTensorInfo.isSparse,
           isDocumentFeature = featureOrLabel.outputTensorInfo.isDocumentFeature)
     }

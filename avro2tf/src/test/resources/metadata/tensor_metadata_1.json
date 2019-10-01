@@ -3,42 +3,42 @@
     "name" : "memberFeatures_all",
     "dtype" : "float",
     "shape" : [ 475 ],
-    "cardinality" : null,
+    "numUniqueValues" : null,
     "isSparse" : true,
     "isDocumentFeature": true
   }, {
     "name" : "memberFeatures_currentSkillIds",
     "dtype" : "float",
     "shape" : [ 1000 ],
-    "cardinality" : null,
+    "numUniqueValues" : null,
     "isSparse" : true,
     "isDocumentFeature": true
   }, {
     "name" : "multiHashedFeature",
     "dtype" : "long",
     "shape" : [ 3 ],
-    "cardinality" : null,
+    "numUniqueValues" : null,
     "isSparse" : false,
     "isDocumentFeature": true
   }, {
     "name" : "timestamp",
     "dtype" : "long",
     "shape" : [ 3 ],
-    "cardinality" : 1483382665524,
+    "numUniqueValues" : 1483382665524,
     "isSparse" : false,
     "isDocumentFeature": true
   }, {
     "name" : "wideFeatures",
     "dtype" : "float",
     "shape" : [ 4 ],
-    "cardinality" : null,
+    "numUniqueValues" : null,
     "isSparse" : true
   } ],
   "labels" : [ {
     "name" : "response",
     "dtype" : "int",
     "shape" : [ ],
-    "cardinality" : null,
+    "numUniqueValues" : null,
     "isSparse" : false,
     "isDocumentFeature": true
   } ]

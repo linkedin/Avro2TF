@@ -17,7 +17,7 @@ case class Avro2TFTensorMetadata(features: Seq[TensorMetadata], labels: Seq[Tens
  * @param name Name of a tensor
  * @param dtype Data type of a tensor
  * @param shape Shape of a tensor
- * @param cardinality Optional cardinality of a tensor
+ * @param numUniqueValues Optional numUniqueValues of a tensor
  * @param isSparse If it is a sparse tensor
  * @param isDocumentFeature If it is a document feature
  */
@@ -25,7 +25,7 @@ case class TensorMetadata(
   name: String,
   @JsonScalaEnumeration(classOf[DataTypeRef]) dtype: DataType,
   shape: Seq[Int],
-  cardinality: Option[Long],
+  numUniqueValues: Option[Long],
   isSparse: Boolean = false,
   isDocumentFeature: Boolean = true
 )
