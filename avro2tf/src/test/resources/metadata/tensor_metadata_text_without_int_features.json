@@ -3,14 +3,14 @@
     "name" : "words_term",
     "dtype" : "long",
     "shape" : [ -1 ],
-    "cardinality" : 4,
+    "numUniqueValues" : 4,
     "isSparse" : false,
     "isDocumentFeature": true
   }, {
     "name" : "words_wideFeatures",
     "dtype" : "float",
     "shape" : [ 100 ],
-    "cardinality" : null,
+    "numUniqueValues" : null,
     "isSparse" : true,
     "isDocumentFeature": true
   } ],
@@ -18,7 +18,7 @@
     "name" : "words_wideFeatures_response",
     "dtype" : "float",
     "shape" : [ 100 ],
-    "cardinality" : null,
+    "numUniqueValues" : null,
     "isSparse" : true,
     "isDocumentFeature": true
   } ]

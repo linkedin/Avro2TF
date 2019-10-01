@@ -5,7 +5,7 @@
       "dtype" : "int",
       "shape" : [
       ],
-      "cardinality" : 112852,
+      "numUniqueValues" : 112852,
       "isSparse" : false,
       "isDocumentFeature" : false
     },
@@ -15,7 +15,7 @@
       "shape" : [
         2
       ],
-      "cardinality" : null,
+      "numUniqueValues" : null,
       "isSparse" : false,
       "isDocumentFeature" : true
     },
@@ -26,7 +26,7 @@
         2,
         10
       ],
-      "cardinality" : null,
+      "numUniqueValues" : null,
       "isSparse" : false,
       "isDocumentFeature" : true
     },
@@ -37,7 +37,7 @@
         2,
         4
       ],
-      "cardinality" : 1000,
+      "numUniqueValues" : 1000,
       "isSparse" : false,
       "isDocumentFeature" : true
     },
@@ -48,7 +48,7 @@
         2,
         20
       ],
-      "cardinality" : null,
+      "numUniqueValues" : null,
       "isSparse" : true,
       "isDocumentFeature" : true
     },
@@ -59,7 +59,7 @@
         2,
         100
       ],
-      "cardinality" : null,
+      "numUniqueValues" : null,
       "isSparse" : true,
       "isDocumentFeature" : true
     }
@@ -71,7 +71,7 @@
       "shape" : [
         2
       ],
-      "cardinality" : null,
+      "numUniqueValues" : null,
       "isSparse" : false,
       "isDocumentFeature" : true
     }
