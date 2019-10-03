@@ -129,9 +129,7 @@ object Avro2TFJobHelper {
         val tensorName = tensor.outputTensorInfo.name
 
         // Check if tensor name is used more than once in Avro2TF config
-        if (!outputTensors.contains(tensorName)) {
-          outputTensors.add(tensorName)
-        } else {
+        if (!outputTensors.add(tensorName)) {
           throw new IllegalArgumentException(s"Output tensor name: $tensorName is used more than once in your config.")
         }
 

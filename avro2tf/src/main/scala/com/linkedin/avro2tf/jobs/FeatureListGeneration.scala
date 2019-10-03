@@ -36,7 +36,7 @@ object FeatureListGeneration {
     fileSystem.delete(featureListPath, ENABLE_RECURSIVE)
     fileSystem.mkdirs(featureListPath)
 
-    // Only collect those without external feature list and hash information specified in Avro2TF configuration
+    // Only collect those without external feature list nor hash information specified in Avro2TF configuration
     val colsToCollectFeatureList = Avro2TFConfigHelper.concatFeaturesAndLabels(params)
       .map(featureOrLabel => featureOrLabel.outputTensorInfo.name) diff
       (processExternalFeatureList(params, fileSystem) ++ Avro2TFConfigHelper.getColsWithHashInfo(params))
