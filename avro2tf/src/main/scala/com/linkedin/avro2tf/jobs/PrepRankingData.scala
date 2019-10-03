@@ -145,7 +145,7 @@ object PrepRankingData {
   }
 
   /**
-   * Update metadata information after grouping
+   * Update metadata shape information after grouping
    *
    * @param spark The spark session
    * @param params The job params

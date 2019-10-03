@@ -35,7 +35,7 @@ object Avro2TFConfigHelper {
    * Get the hashInfo of columns with hash information specified
    *
    * @param params Avro2TF parameters specified by user
-   * @return A sequence of column names
+   * @return A map of column name to hashInfo
    */
   def getColsHashInfo(params: Avro2TFParams): Map[String, HashInfo] = {
 
@@ -63,7 +63,7 @@ object Avro2TFConfigHelper {
    * Get output tensor data types from Avro2TF configuration
    *
    * @param params Avro2TF parameters specified by user
-   * @return A sequence of output tensor data types
+   * @return A map of output tensor name to its data type
    */
   def getOutputTensorDataTypes(params: Avro2TFParams): Map[String, DataType.Value] = {
 
