@@ -121,7 +121,8 @@ object PrepRankingData {
             params.groupListMaxSize,
             isLabel,
             params.labelPaddingValue,
-            params.featurePaddingValue)(col(it)))
+            params.featurePaddingValue,
+            params.skipPadding)(col(it)))
     }
 
     // flatten indices of sparse tensors
@@ -212,20 +213,22 @@ object PrepRankingData {
    * @param isLabel Whether the column is a label field
    * @param labelPaddingValue The label padding value
    * @param featurePaddingValue The feature padding value
+   * @param skipPadding Skip padding for firstN if batch size is smaller than N
    * @return The udf does the taking first n items from array in a column
    */
   private def takeFirstN(
     dtype: ADataType,
     groupListMaxSize: Int,
-    isLabel: Boolean = false,
-    labelPaddingValue: Double = -1.0d,
-    featurePaddingValue: Double = 0.0d) = {
+    isLabel: Boolean,
+    labelPaddingValue: Double,
+    featurePaddingValue: Double,
+    skipPadding: Boolean) = {
 
     def takeFunc[T](paddingValue: T) = (array: Seq[T]) => {
       val filledArray = if (array.size >= groupListMaxSize) {
         array
       } else {
-        array ++ Seq.fill(groupListMaxSize - array.size)(paddingValue)
+        if (skipPadding) array else array ++ Seq.fill(groupListMaxSize - array.size)(paddingValue)
       }
       filledArray.take(groupListMaxSize)
     }

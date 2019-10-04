@@ -17,4 +17,5 @@ object PrepRankingJobParamNames {
   final val EXECUTION_MODE = "execution-mode"
   final val LABEL_PADDING_VALUE = "label-padding-value"
   final val FEATURE_PADDING_VALUE = "feature-padding-value"
+  final val SKIP_PADDING = "skip-padding"
 }

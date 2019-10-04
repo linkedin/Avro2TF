@@ -13,7 +13,7 @@
       "name" : "movieIdString",
       "dtype" : "string",
       "shape" : [
-        2
+        10
       ],
       "numUniqueValues" : null,
       "isSparse" : false,
@@ -23,7 +23,7 @@
       "name" : "genreFeaturesTerms",
       "dtype" : "string",
       "shape" : [
-        2,
+        10,
         10
       ],
       "numUniqueValues" : null,
@@ -34,7 +34,7 @@
       "name" : "movieId_hashed",
       "dtype" : "int",
       "shape" : [
-        2,
+        10,
         4
       ],
       "numUniqueValues" : 1000,
@@ -45,7 +45,7 @@
       "name" : "genreFeatures",
       "dtype" : "float",
       "shape" : [
-        2,
+        10,
         20
       ],
       "numUniqueValues" : null,
@@ -56,7 +56,7 @@
       "name" : "genreFeatures_movieLatentFactorFeatures",
       "dtype" : "float",
       "shape" : [
-        2,
+        10,
         100
       ],
       "numUniqueValues" : null,
@@ -69,7 +69,7 @@
       "name" : "response",
       "dtype" : "double",
       "shape" : [
-        2
+        10
       ],
       "numUniqueValues" : null,
       "isSparse" : false,

@@ -15,7 +15,8 @@ case class PrepRankingDataParams(
   numOutputFiles: Int = -1,
   enableShuffle: Boolean = false,
   labelPaddingValue: Double = -1.0d,
-  featurePaddingValue: Double = 0.0d
+  featurePaddingValue: Double = 0.0d,
+  skipPadding: Boolean = false
 )
 
 object PrepRankingDataParamsParser {
@@ -135,6 +136,17 @@ object PrepRankingDataParamsParser {
         """Optional.
           |Padding values for scalar features. Default is 0.0d.
           |Not applicable for name-term-value features.
+        """.stripMargin
+      )
+
+    opt[Boolean](PrepRankingJobParamNames.SKIP_PADDING)
+      .action((x, p) => p.copy(skipPadding = x))
+      .optional()
+      .text(
+        """Optional.
+          |Skip padding option if it's set as true.
+          |If padding is skipped, padding is skipped for disk output and user will need to pad it in memory after loading it back
+          |The default value is false, which means padding is by default enabled
         """.stripMargin
       )
   }
