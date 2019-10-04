@@ -373,6 +373,7 @@ An example Avro2TF config will looks like this:
   --output-format                   Optional.   The output format of tensorized data, e.g. Avro or TFRecord.
   --extra-columns-to-keep           Optional.   A list of comma separated column names to specify extra columns to keep.
   --tensors-sharing-feature-lists   Optional.   Groups of output tensor names separated by semicolon; tensors in the same group are separated by comma. Tensors within the same group share the same feature list.
+  --enable-filter-zero              Optional.   Whether to enable filter zero for all sparse vector output. Default is false.
 ```
 
 ## Avro2TF Examples

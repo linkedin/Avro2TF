@@ -25,4 +25,5 @@ object Avro2TFJobParamNames {
   final val PARTITION_FIELD_NAME = "partition-field-name"
   final val ENABLE_TERM_ONLY_FEATURE_LIST = "enable-term-only-feature-list"
   final val DISCARD_UNKNOWN_ENTRIES = "discard-unknown-entries"
+  final val ENABLE_FILTER_ZERO = "enable-filter-zero"
 }

@@ -35,7 +35,7 @@ object HashingTransformer {
 
         val hashedColumn = if (CommonUtils.isArrayOfNTV(dataType)) {
           if (outputTensorSparsity(columnName)) {
-            hashArrayOfNTVToSparseVector(hashInfo)(dataFrame(columnName))
+            hashArrayOfNTVToSparseVector(hashInfo, params.enableFilterZero)(dataFrame(columnName))
           } else {
             hashArrayOfNTVToDenseVector(hashInfo)(dataFrame(columnName))
           }
@@ -61,14 +61,15 @@ object HashingTransformer {
    * Construct a Spark UDF to hash an array of NTV to sparse vector
    *
    * @param hashInfo Hashing info specified by user
+   * @param filterZeros If it's set true, the constructed sparse vector doesn't have zeros in values
    * @return A spark UDF
    */
-  private def hashArrayOfNTVToSparseVector(hashInfo: HashInfo): UserDefinedFunction = {
+  private def hashArrayOfNTVToSparseVector(hashInfo: HashInfo, filterZeros: Boolean): UserDefinedFunction = {
 
     udf {
       ntvs: Seq[Row] => {
         val idValues = hashNTVToIdValues(ntvs, hashInfo)
-        Avro2TF.SparseVector(idValues.map(_.id), idValues.map(_.value))
+        Avro2TF.SparseVector(idValues.map(_.id), idValues.map(_.value), filterZeros)
       }
     }
   }

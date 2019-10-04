@@ -67,7 +67,7 @@ object FeatureIndicesConversion {
         } else if (CommonUtils.isArrayOfNTV(dataFrameSchema(columnName).dataType)) {
           if (outputTensorSparsity(columnName)) {
             convertedColumns.append(
-              convertNTVToSparseVector(featureMapping, params.discardUnknownEntries)(dataFrame(columnName))
+              convertNTVToSparseVector(featureMapping, params.discardUnknownEntries, params.enableFilterZero)(dataFrame(columnName))
                 .name(columnName))
           } else {
             convertedColumns.append(
@@ -121,16 +121,18 @@ object FeatureIndicesConversion {
    *
    * @param featureMapping The mapping of name+term to id
    * @param discardUnknownEntries Whether to discard unknown entries
+   * @param filterZeros If it's set true, the constructed sparse vector doesn't have zeros in values
    * @return A Spark udf
    */
   private def convertNTVToSparseVector(
     featureMapping: Map[String, Long],
-    discardUnknownEntries: Boolean): UserDefinedFunction = {
+    discardUnknownEntries: Boolean,
+    filterZeros: Boolean): UserDefinedFunction = {
 
     udf {
       ntvs: Seq[Row] => {
         val idValues = convertNTVToIdValues(ntvs, featureMapping, discardUnknownEntries)
-        Avro2TF.SparseVector(idValues.map(_.id), idValues.map(_.value))
+        Avro2TF.SparseVector(idValues.map(_.id), idValues.map(_.value), filterZeros)
       }
     }
   }

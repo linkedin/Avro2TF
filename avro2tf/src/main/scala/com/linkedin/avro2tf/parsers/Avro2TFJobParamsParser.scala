@@ -27,6 +27,7 @@ import org.apache.hadoop.mapred.JobConf
  * @param enableCache Whether to enable caching the intermediate Spark DataFrame result
  * @param skipConversion Indicate whether to skip the conversion step
  * @param outputFormat Output format of tensorized data, e.g. Avro or TFRecord
+ * @param enableFilterZero Filter out zeros in Sparse vector output. Once it's turned on, it will be applied to all sparse vector output
  */
 case class Avro2TFParams(
   inputPaths: Seq[String],
@@ -47,7 +48,8 @@ case class Avro2TFParams(
   numPartitions: Int,
   partitionFieldName: String,
   termOnlyFeatureList: Boolean,
-  discardUnknownEntries: Boolean
+  discardUnknownEntries: Boolean,
+  enableFilterZero: Boolean
 )
 
 /**
@@ -316,6 +318,16 @@ object Avro2TFJobParamsParser {
         """Optional.
           |Whether to discard unknown entries during indices conversion""".stripMargin
       )
+
+    opt[Boolean](Avro2TFJobParamNames.ENABLE_FILTER_ZERO)
+      .action(
+        (enableFilterZero, avro2TFParams) => avro2TFParams
+          .copy(enableFilterZero = enableFilterZero))
+      .optional()
+      .text(
+        """Optional.
+          |Whether to enable filter zero for all sparse vector output. Default is false""".stripMargin
+      )
   }
 
   /**
@@ -347,7 +359,8 @@ object Avro2TFJobParamsParser {
         numPartitions = 100,
         partitionFieldName = "",
         termOnlyFeatureList = false,
-        discardUnknownEntries = false
+        discardUnknownEntries = false,
+        enableFilterZero = false
       )
     ) match {
       case Some(params) =>

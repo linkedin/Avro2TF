@@ -10,7 +10,6 @@ case class PrepRankingDataParams(
   outputMetadataPath: String,
   groupIdList: Seq[String],
   groupListMaxSize: Int,
-  enableFilterZero: Boolean = false,
   dropColumns: Option[Seq[String]] = None,
   executionMode: TrainingMode.TrainingMode = TrainingMode.training,
   numOutputFiles: Int = -1,
@@ -72,15 +71,6 @@ object PrepRankingDataParamsParser {
       .text(
         """Required.
           |The maximum list length for each query.
-        """.stripMargin
-      )
-
-    opt[Boolean](PrepRankingJobParamNames.ENABLE_FILTER_ZERO)
-      .action( (x, p) => p.copy(enableFilterZero = x))
-      .optional()
-      .text(
-        """Optional.
-          |Whether to filter out the zero values in features. Default is false.
         """.stripMargin
       )
 
