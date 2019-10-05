@@ -96,4 +96,55 @@ class FeatureIndicesConversionTest extends WithLocalSparkSession {
     Avro2TFJobHelper.saveDataToHDFS(convertedDataFrame, avro2TFParams)
     assertTrue(new File(s"${avro2TFParams.workingDir.trainingDataPath}/_SUCCESS").exists())
   }
+
+  /**
+    * Test the correctness of indices conversion job for sequence text input. In the test data, there is:
+    * "name" : "jobSegments",
+    * "type" : [
+    * {
+    * "type": "array",
+    * "items": "string"
+    * }
+    * ]
+    *
+    * The FeatureIndicesConversion should convert it to a varLen of long
+    */
+  @Test(dataProvider = "testData")
+  def testTextSeqConversion(outputFormat: String, discardUnknownEntries: Boolean): Unit = {
+    val avro2TFConfig = new File(
+      getClass.getClassLoader.getResource(AVRO2TF_CONFIG_PATH_VALUE_TEXT_SEQ).getFile
+    ).getAbsolutePath
+    FileUtils.deleteDirectory(new File(WORKING_DIRECTORY_INDICES_CONVERSION))
+
+    val params = Map(
+      Avro2TFJobParamNames.INPUT_PATHS -> INPUT_TEXT_SEQ_FILE_PATHS,
+      Avro2TFJobParamNames.WORKING_DIR -> WORKING_DIRECTORY_INDICES_CONVERSION,
+      Avro2TFJobParamNames.AVRO2TF_CONFIG_PATH -> avro2TFConfig,
+      Avro2TFJobParamNames.OUTPUT_FORMAT -> outputFormat,
+      Avro2TFJobParamNames.DISCARD_UNKNOWN_ENTRIES -> discardUnknownEntries.toString
+    )
+    val dataFrame = session.read.avro(INPUT_TEXT_SEQ_FILE_PATHS)
+    val avro2TFParams = Avro2TFJobParamsParser.parse(TestUtil.convertParamMapToParamList(params))
+
+    val dataFrameExtracted = FeatureExtraction.run(dataFrame, avro2TFParams)
+    val dataFrameTransformed = FeatureTransformation.run(dataFrameExtracted, avro2TFParams)
+    FeatureListGeneration.run(dataFrameTransformed, avro2TFParams)
+    val convertedDataFrame = FeatureIndicesConversion.run(dataFrameTransformed, avro2TFParams)
+
+    val input = dataFrame.select("jobSegments").collect()
+    val output = convertedDataFrame.select("jobSegments_ids").collect()
+
+    assertTrue(input.length == output.length)
+    output.zipWithIndex.foreach {
+      case (row, index) => {
+        val names = input(index).getAs[Seq[String]](0).length
+        val ids = row.getAs[Seq[Long]](0).length
+        if (discardUnknownEntries) {
+          assertTrue(ids <= names)
+        } else {
+          assertTrue(ids == names)
+        }
+      }
+    }
+  }
 }

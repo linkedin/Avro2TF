@@ -28,6 +28,7 @@ object ConstantsForTest {
   final val INPUT_MOVIELENS_FILE_PATHS = "src/test/resources/data/trainSmall.avro"
   final val INPUT_PATHS_VALUE = "/input/123"
   final val INPUT_TEXT_FILE_PATHS = "src/test/resources/data/text.avro"
+  final val INPUT_TEXT_SEQ_FILE_PATHS = "src/test/resources/data/textSequence.avro"
   final val INPUT_SHARE_FEATURE_PATH = "src/test/resources/data/share_feat_list/test_share_feature_list.avro"
   final val MIN_PARTS_VALUE = 100
   final val MIX_NTV_FEATURE_NAME = "fruits_day4"
@@ -47,6 +48,7 @@ object ConstantsForTest {
   final val AVRO2TF_CONFIG_PATH_VALUE_SAMPLE = "configs/avro2tf_config_sample.json"
   final val AVRO2TF_CONFIG_PATH_VALUE_SAMPLE_WITHOUT_INT_FEATURES =
     "configs/avro2tf_config_without_int_features.json"
+  final val AVRO2TF_CONFIG_PATH_VALUE_TEXT_SEQ = "configs/avro2tf_config_text_sequence.json"
   final val AVRO2TF_CONFIG_PATH_VALUE_SHARE_FEATURE = "configs/avro2tf_config_share_feature.json"
   final val AVRO2TF_CONFIG_TEST_ARRAY = Array.empty[Int]
   final val AVRO2TF_CONFIG_TEST_INFO = "testInfo"

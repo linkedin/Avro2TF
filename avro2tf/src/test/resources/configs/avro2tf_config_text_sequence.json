@@ -1,0 +1,37 @@
+{
+  "features": [
+    {
+      "inputFeatureInfo": {
+        "columnExpr": "jobSegments"
+      },
+      "outputTensorInfo": {
+        "name": "jobSegments_ids",
+        "dtype": "long",
+        "shape": [-1],
+        "isDocumentFeature": true
+      }
+    },
+    {
+      "inputFeatureInfo": {
+        "columnExpr": "memberId"
+      },
+      "outputTensorInfo": {
+        "name": "userId",
+        "dtype": "long",
+        "shape": []
+      }
+    }
+  ],
+  "labels": [
+    {
+      "inputFeatureInfo": {
+        "columnExpr": "jobId"
+      },
+      "outputTensorInfo": {
+        "name": "label",
+        "dtype": "double",
+        "shape": []
+      }
+    }
+  ]
+}
