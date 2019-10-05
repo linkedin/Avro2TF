@@ -224,7 +224,7 @@ object FeatureIndicesConversion {
         if (stringSeq == null || stringSeq.isEmpty) {
           Seq(lastIndex)
         } else {
-          val ids = stringSeq.filter(x => discardUnknownEntries && !featureMapping.contains(x))
+          val ids = stringSeq.filter(x => !(discardUnknownEntries && !featureMapping.contains(x)))
             .map(word => featureMapping.getOrElse(word, lastIndex))
           if (ids.isEmpty) {
             Seq(lastIndex)
