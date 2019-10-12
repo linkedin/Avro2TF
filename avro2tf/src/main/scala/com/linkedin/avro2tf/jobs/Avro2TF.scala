@@ -88,6 +88,12 @@ object Avro2TF {
    */
   case class SparseVector(indices: Seq[Long], values: Seq[Float])
 
+  /**
+    * Case class for ranked [[SparseVector]] type. Ranked SparseVector is the format of a list of SparseVector,
+    * to represent it, we will have a 2D indices array and a 1D values array
+    * @param indices 2D indices array, which has indices(0) as first dimension of value and indices(1) as second dimension of value
+    * @param values 1D values array, which has concatenation of all values from original SparseVector values
+    */
   case class RankedSparseVector(indices: Seq[Seq[Long]], values: Seq[Float])
 
   /**

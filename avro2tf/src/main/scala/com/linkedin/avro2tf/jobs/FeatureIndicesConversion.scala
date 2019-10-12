@@ -49,7 +49,7 @@ object FeatureIndicesConversion {
               if (outputTensorSparsity(columnName)) {
                 convertedColumns
                   .append(
-                    convertIdToSparseVector(featureMapping, params.discardUnknownEntries, params.enableFilterZero)(
+                    convertIdToSparseVector(params.enableFilterZero)(
                     convertStringToId(featureMapping, params.discardUnknownEntries)(dataFrame(columnName)))
                       .name(columnName))
               } else {
@@ -63,7 +63,7 @@ object FeatureIndicesConversion {
               if (outputTensorSparsity(columnName)) {
                 convertedColumns
                   .append(
-                    convertIdSeqToSparseVector(featureMapping, params.discardUnknownEntries, params.enableFilterZero)(
+                    convertIdSeqToSparseVector(params.enableFilterZero)(
                     convertStringSeqToIdSeq(featureMapping, params.discardUnknownEntries)(dataFrame(columnName)))
                       .name(columnName))
               } else {
@@ -154,9 +154,13 @@ object FeatureIndicesConversion {
     }
   }
 
+  /**
+    * Spark UDF function to convert a long type id column to a column of SparseVector. The input
+    * Seq(id.toFloat) is values of SparseVector and Seq(0) is indices
+    * @param filterZeros If it's set true, the constructed sparse vector doesn't have zeros in values
+    * @return A Spark udf that describes before
+    */
   private def convertIdToSparseVector(
-    featureMapping: Map[String, Long],
-    discardUnknownEntries: Boolean,
     filterZeros: Boolean): UserDefinedFunction = {
     udf {
       id: Long => {
@@ -165,9 +169,14 @@ object FeatureIndicesConversion {
     }
   }
 
+  /**
+    * Spark UDF function to convert a long array column to a column of SparseVector.
+    * The input ids are used as values of SparseVector in the type of float array
+    * Seq(0, 1, ..., ids.length -1) is used as indices of SparseVector
+    * @param filterZeros If it's set true, the constructed sparse vector doesn't have zeros in values
+    * @return A Spark udf that describes before
+    */
   private def convertIdSeqToSparseVector(
-    featureMapping: Map[String, Long],
-    discardUnknownEntries: Boolean,
     filterZeros: Boolean): UserDefinedFunction = {
     udf {
       ids: Seq[Long] => {
