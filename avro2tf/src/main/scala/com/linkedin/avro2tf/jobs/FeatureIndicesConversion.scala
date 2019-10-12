@@ -46,15 +46,32 @@ object FeatureIndicesConversion {
           dataFrameSchema(columnName).dataType.isInstanceOf[StringType]) {
           if (outputTensorDataTypes(columnName) == DataType.int || outputTensorDataTypes(columnName) == DataType.long) {
             if (dataFrameSchema(columnName).dataType.isInstanceOf[StringType]) {
-              convertedColumns
-                .append(
-                  convertStringToId(featureMapping, params.discardUnknownEntries)(dataFrame(columnName))
-                    .name(columnName))
+              if (outputTensorSparsity(columnName)) {
+                convertedColumns
+                  .append(
+                    convertIdToSparseVector(featureMapping, params.discardUnknownEntries, params.enableFilterZero)(
+                    convertStringToId(featureMapping, params.discardUnknownEntries)(dataFrame(columnName)))
+                      .name(columnName))
+              } else {
+                convertedColumns
+                  .append(
+                    convertStringToId(featureMapping, params.discardUnknownEntries)(dataFrame(columnName))
+                      .name(columnName))
+              }
+
             } else {
-              convertedColumns
-                .append(
-                  convertStringSeqToIdSeq(featureMapping, params.discardUnknownEntries)(dataFrame(columnName))
-                    .name(columnName))
+              if (outputTensorSparsity(columnName)) {
+                convertedColumns
+                  .append(
+                    convertIdSeqToSparseVector(featureMapping, params.discardUnknownEntries, params.enableFilterZero)(
+                    convertStringSeqToIdSeq(featureMapping, params.discardUnknownEntries)(dataFrame(columnName)))
+                      .name(columnName))
+              } else {
+                convertedColumns
+                  .append(
+                    convertStringSeqToIdSeq(featureMapping, params.discardUnknownEntries)(dataFrame(columnName))
+                      .name(columnName))
+              }
             }
             convertedColumnNames.add(columnName)
           } else {
@@ -136,6 +153,29 @@ object FeatureIndicesConversion {
       }
     }
   }
+
+  private def convertIdToSparseVector(
+    featureMapping: Map[String, Long],
+    discardUnknownEntries: Boolean,
+    filterZeros: Boolean): UserDefinedFunction = {
+    udf {
+      id: Long => {
+        Avro2TF.SparseVector(Seq(0), Seq(id.toFloat), filterZeros)
+      }
+    }
+  }
+
+  private def convertIdSeqToSparseVector(
+    featureMapping: Map[String, Long],
+    discardUnknownEntries: Boolean,
+    filterZeros: Boolean): UserDefinedFunction = {
+    udf {
+      ids: Seq[Long] => {
+        Avro2TF.SparseVector(0L until ids.length.toLong, ids.map(_.toFloat), filterZeros)
+      }
+    }
+  }
+
 
   /**
    * Spark UDF function to convert a column of NTVs to a column of dense vector

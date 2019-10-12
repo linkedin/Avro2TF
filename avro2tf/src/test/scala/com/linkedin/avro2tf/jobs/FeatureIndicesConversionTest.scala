@@ -5,6 +5,7 @@ import java.io.File
 import com.databricks.spark.avro._
 import com.linkedin.avro2tf.constants.Avro2TFJobParamNames
 import com.linkedin.avro2tf.helpers.Avro2TFJobHelper
+import com.linkedin.avro2tf.jobs.Avro2TF.SparseVector
 import com.linkedin.avro2tf.parsers.Avro2TFJobParamsParser
 import com.linkedin.avro2tf.utils.ConstantsForTest._
 import com.linkedin.avro2tf.utils.{CommonUtils, TestUtil, WithLocalSparkSession}
@@ -131,18 +132,22 @@ class FeatureIndicesConversionTest extends WithLocalSparkSession {
     FeatureListGeneration.run(dataFrameTransformed, avro2TFParams)
     val convertedDataFrame = FeatureIndicesConversion.run(dataFrameTransformed, avro2TFParams)
 
-    val input = dataFrame.select("jobSegments").collect()
-    val output = convertedDataFrame.select("jobSegments_ids").collect()
 
-    assertTrue(input.length == output.length)
-    output.zipWithIndex.foreach {
-      case (row, index) => {
-        val names = input(index).getAs[Seq[String]](0).length
-        val ids = row.getAs[Seq[Long]](0).length
+    convertedDataFrame.foreach {
+      row => {
+        val sparseVector = row.getAs[Row]("jobSegmentsSparse")
+        val indices = sparseVector.getAs[Seq[Long]](SPARSE_VECTOR_INDICES_FIELD_NAME)
+        val values = sparseVector.getAs[Seq[Float]](SPARSE_VECTOR_VALUES_FIELD_NAME)
+
+        val names = row.getAs[Seq[String]]("jobSegments")
+        val ids = row.getAs[Seq[Long]]("jobSegments_ids")
+        assertTrue(ids.length == indices.length)
+        assertTrue(ids.length == values.length)
+        assertTrue(ids.map(_.toFloat) == values)
         if (discardUnknownEntries) {
-          assertTrue(ids <= names)
+          assertTrue(ids.length <= names.length)
         } else {
-          assertTrue(ids == names)
+          assertTrue(ids.length == names.length)
         }
       }
     }

@@ -88,6 +88,8 @@ object Avro2TF {
    */
   case class SparseVector(indices: Seq[Long], values: Seq[Float])
 
+  case class RankedSparseVector(indices: Seq[Seq[Long]], values: Seq[Float])
+
   /**
     * Companion object of [[SparseVector]]. It takes in extra flag filterZero. If it's set,
     * it will filter out all zeros values and their corresponding indices

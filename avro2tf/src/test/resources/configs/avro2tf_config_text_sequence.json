@@ -5,9 +5,32 @@
         "columnExpr": "jobSegments"
       },
       "outputTensorInfo": {
+        "name": "jobSegments",
+        "dtype": "string",
+        "shape": [-1],
+        "isDocumentFeature": true
+      }
+    },
+    {
+      "inputFeatureInfo": {
+        "columnExpr": "jobSegments"
+      },
+      "outputTensorInfo": {
         "name": "jobSegments_ids",
         "dtype": "long",
         "shape": [-1],
+        "isDocumentFeature": true
+      }
+    },
+    {
+      "inputFeatureInfo": {
+        "columnExpr": "jobSegments"
+      },
+      "outputTensorInfo": {
+        "name": "jobSegmentsSparse",
+        "dtype": "long",
+        "shape": [-1],
+        "isSparse": true,
         "isDocumentFeature": true
       }
     },

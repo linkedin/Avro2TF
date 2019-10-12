@@ -1,12 +1,11 @@
 package com.linkedin.avro2tf.jobs
 
 import scala.collection.mutable
-
 import com.databricks.spark.avro._
 import com.linkedin.avro2tf.configs.TensorMetadata
 import com.linkedin.avro2tf.constants.Constants
 import com.linkedin.avro2tf.helpers.Avro2TFJobHelper
-import com.linkedin.avro2tf.jobs.Avro2TF.SparseVector
+import com.linkedin.avro2tf.jobs.Avro2TF.{RankedSparseVector, SparseVector}
 import com.linkedin.avro2tf.parsers.{PrepRankingDataParams, PrepRankingDataParamsParser}
 import com.linkedin.avro2tf.utils._
 import io.circe.generic.auto._
@@ -196,13 +195,15 @@ object PrepRankingData {
     udf(
       (arrayOfSp: Seq[Row]) => {
 
-        val indices = mutable.ArrayBuffer[Long]()
+        val indices = mutable.ArrayBuffer[mutable.ArrayBuffer[Long]](mutable.ArrayBuffer[Long](), mutable.ArrayBuffer[Long]())
         val values = mutable.ArrayBuffer[Float]()
         arrayOfSp.zipWithIndex.map { case (sp, index) =>
-          indices ++= sp.getAs[Seq[Long]](Constants.INDICES).flatMap(x => Seq(index, x))
+          val currIndices = sp.getAs[Seq[Long]](Constants.INDICES)
+          indices(0) ++= List.fill(currIndices.length)(index.toLong)
+          indices(1) ++= currIndices
           values ++= sp.getAs[Seq[Float]](Constants.VALUES)
         }
-        SparseVector(indices, values)
+        RankedSparseVector(indices, values)
       })
 
   /**
