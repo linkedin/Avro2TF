@@ -37,9 +37,7 @@ object PrepRankingData {
     val metadata = readMetadata(fs, params.inputMetadataPath)
 
     require(metadata.contains(Constants.FEATURES), "Cannot find features section in metadata.")
-    require(
-      metadata.contains(Constants.LABELS) && metadata(Constants.LABELS).size == 1,
-      "Cannot find labels section in metadata or length is not equal to 1.")
+    require(metadata.contains(Constants.LABELS), "Cannot find labels section in metadata.")
 
     require(fs.exists(new Path(params.inputDataPath)), s"Cannot find ${params.inputDataPath} on hdfs.")
     prepareRanking(spark, params.inputDataPath, params, metadata)
@@ -89,8 +87,8 @@ object PrepRankingData {
     val queryFeatures = queryFeaturesMetadata.map(_.name)
     logger.info(s"Query feature list: ${queryFeatures.mkString(", ")}.")
 
-    val label = metadata(Constants.LABELS).head.name
-    logger.info(s"Label field: $label.")
+    val labels = metadata(Constants.LABELS).map(_.name).toSet
+    logger.info(s"Label field(s): ${labels.mkString(", ")}.")
 
     val documentFeatures = documentFeaturesMetadata.map(_.name).filter(x => !params.groupIdList.contains(x))
     logger.info(s"Content feature list: ${documentFeatures.mkString(", ")}.")
@@ -112,17 +110,16 @@ object PrepRankingData {
     // For sparse tensor variable length is acceptable but for dense tensor padding is needed.
     var truncateDf = groupDf
     documentFeatures.foreach { it =>
-      val isLabel = it.equals(label)
       truncateDf = truncateDf
         .withColumn(
           it,
           takeFirstN(
-            selectDf.schema(it).dataType,
-            params.groupListMaxSize,
-            isLabel,
-            params.labelPaddingValue,
-            params.featurePaddingValue,
-            params.skipPadding)(col(it)))
+            dtype = selectDf.schema(it).dataType,
+            groupListMaxSize = params.groupListMaxSize,
+            isLabel = labels.contains(it),
+            labelPaddingValue = params.labelPaddingValue,
+            featurePaddingValue = params.featurePaddingValue,
+            skipPadding = params.skipPadding)(col(it)))
     }
 
     // flatten indices of sparse tensors

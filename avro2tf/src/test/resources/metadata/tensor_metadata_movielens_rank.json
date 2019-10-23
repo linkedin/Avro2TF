@@ -74,6 +74,38 @@
       "numUniqueValues" : null,
       "isSparse" : false,
       "isDocumentFeature" : true
+    },
+    {
+      "name" : "response2",
+      "dtype" : "double",
+      "shape" : [
+        10
+      ],
+      "numUniqueValues" : null,
+      "isSparse" : false,
+      "isDocumentFeature" : true
+    },
+    {
+      "name" : "movieId_hashed_response",
+      "dtype" : "long",
+      "shape" : [
+        10,
+        4
+      ],
+      "numUniqueValues" : 1000,
+      "isSparse" : false,
+      "isDocumentFeature": true
+    },
+    {
+      "name" : "genreFeatures_movieLatentFactorFeatures_response",
+      "dtype" : "float",
+      "shape" : [
+        10,
+        100
+      ],
+      "numUniqueValues" : null,
+      "isSparse" : true,
+      "isDocumentFeature": true
     }
   ]
 }

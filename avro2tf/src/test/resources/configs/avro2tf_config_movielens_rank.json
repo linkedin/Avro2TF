@@ -115,6 +115,62 @@
         "dtype": "double",
         "shape": []
       }
+    },
+    {
+      "inputFeatureInfo": {
+        "columnExpr": "response"
+      },
+      "outputTensorInfo": {
+        "name": "response2",
+        "dtype": "double",
+        "shape": []
+      }
+    },
+    {
+      "inputFeatureInfo": {
+        "columnExpr": "movieId",
+        "transformConfig": {
+          "hashInfo": {
+            "hashBucketSize": 1000,
+            "numHashFunctions": 4
+          }
+        }
+      },
+      "outputTensorInfo": {
+        "name": "movieId_hashed_response",
+        "dtype": "long",
+        "shape": [
+          4
+        ]
+      }
+    },
+    {
+      "inputFeatureInfo": {
+        "columnConfig": {
+          "genreFeatures": {
+            "whitelist": [
+              "Genre"
+            ]
+          },
+          "movieLatentFactorFeatures": {
+            "blacklist": [
+              "*"
+            ]
+          }
+        },
+        "transformConfig": {
+          "hashInfo": {
+            "hashBucketSize": 100,
+            "combiner": "AVG"
+          }
+        }
+      },
+      "outputTensorInfo": {
+        "name": "genreFeatures_movieLatentFactorFeatures_response",
+        "dtype": "float",
+        "shape": [],
+        "isSparse" : true
+      }
     }
   ]
 }
