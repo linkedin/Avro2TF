@@ -206,8 +206,8 @@ object Avro2TFJobHelper {
       case (columnName, isSparse) =>
         if (isSparse) {
           // Construct two separate indices and values columns for SparseVector data type
-          newConvertedColumns.append(expr(s"$columnName.$INDICES").alias(s"$columnName-$INDICES"))
-          newConvertedColumns.append(expr(s"$columnName.$VALUES").alias(s"$columnName-$VALUES"))
+          newConvertedColumns.append(expr(s"$columnName.$INDICES").alias(s"${columnName}_$INDICES"))
+          newConvertedColumns.append(expr(s"$columnName.$VALUES").alias(s"${columnName}_$VALUES"))
           convertedColumnNames.add(columnName)
         } else if (CommonUtils.isArrayOfString(dataFrameSchema(columnName).dataType)) {
           // Construct a new array of String array column for String array data type to be used with SequenceExample
