@@ -89,26 +89,28 @@ object Avro2TF {
   case class SparseVector(indices: Seq[Long], values: Seq[Float])
 
   /**
-    * Companion object of [[SparseVector]]. It takes in extra flag filterZero. If it's set,
-    * it will filter out all zeros values and their corresponding indices
-    */
+   * Companion object of [[SparseVector]]. It takes in extra flag filterZero. If it's set,
+   * it will filter out all zeros values and their corresponding indices
+   */
   object SparseVector {
     /**
-      * To construct a [[SparseVector]] based on user input
-      * @param indices indices for constructed [[SparseVector]]
-      * @param values values for constructed [[SparseVector]]. It can have zeros if filterZero is false
-      * @param filterZero it's a flag to set if filtering out zeros values and their corresponding indices
-      */
-    def apply(indices: Seq[Long], values: Seq[Float], filterZero: Boolean) : SparseVector = {
+     * To construct a [[SparseVector]] based on user input
+     *
+     * @param indices indices for constructed [[SparseVector]]
+     * @param values values for constructed [[SparseVector]]. It can have zeros if filterZero is false
+     * @param filterZero it's a flag to set if filtering out zeros values and their corresponding indices
+     */
+    def apply(indices: Seq[Long], values: Seq[Float], filterZero: Boolean): SparseVector = {
+
       if (filterZero) filterOutZeroValues(indices, values) else SparseVector(indices, values)
     }
 
     private def filterOutZeroValues(indices: Seq[Long], values: Seq[Float]): SparseVector = {
-      val nonZerosIndices = values.zipWithIndex.map {
-        case (value, index) => (value, index)
-      }.filter(_._1 != 0.0).map(_._2)
-      SparseVector(indices.zipWithIndex.filter(nonZerosIndices contains _._2).map(_._1),
-        values.zipWithIndex.filter(nonZerosIndices contains _._2).map(_._1))
+
+      val (newIndices, newValues) = indices.zip(values)
+        .filter { case (_, value) => value != 0.0 }
+        .unzip
+      SparseVector(newIndices, newValues)
     }
   }
 
