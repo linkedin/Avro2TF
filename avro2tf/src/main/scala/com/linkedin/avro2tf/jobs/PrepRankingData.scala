@@ -121,15 +121,13 @@ object PrepRankingData {
             skipPadding = params.skipPadding)(col(it)))
     }
 
-    val twoDimSparseFeatureSchema = generateSchemaForMultiDimSparseFeature(2)
-
     // flatten indices of sparse tensors
     val documentFeaturesWithSpVec = documentFeatures.filter(
       it =>
         CommonUtils.isArrayOfSparseVector(truncateDf.schema(it).dataType))
 
     documentFeaturesWithSpVec.foreach { it =>
-      truncateDf = truncateDf.withColumn(it, multiDimSparseVectorArray(twoDimSparseFeatureSchema)(col(it)))
+      truncateDf = truncateDf.withColumn(it, twoDimensionSparseFeature(col(it)))
     }
 
     // write to disk
@@ -145,17 +143,14 @@ object PrepRankingData {
 
   /**
     * Based on input rank, to generate schema for the output. It's used for rank larger than 1. For rank1, it's using [[SparseVector]] directly
+    * The N-Dimension Sparse feature schema is similar as https://www.tensorflow.org/api_docs/python/tf/io/SparseFeature, which has column major indices
     * @param rank input rank, should be larger than 1
-    * @return schema, for example, if rank == 2, the returned schema should be:
+    * @return if rank == n, then the returned schema is:
     *         indices0: longArray
     *         indices1: longArray
+    *         ...
+    *         indices(n-1): longArray
     *         values: floatArray
-    *         if rank == 3, the returned schema should be
-    *         indices0: longArray
-    *         indices1: longArray
-    *         indices2: longArray
-    *         values: floatArray
-    *         The returned schema is based on column major storage for multi dimension sparse feature
     */
   def generateSchemaForMultiDimSparseFeature(rank: Int): StructType = {
     require(rank > 1, s"Input rank should larger than 1 but found [$rank] instead")
@@ -208,10 +203,11 @@ object PrepRankingData {
     )
   }
 
+  val twoDimensionSparseFeatureSchema = generateSchemaForMultiDimSparseFeature(2)
   /**
-   * udf to have 2d Sparse Vector. The input is expected to be [[SparseVector]] with indices and values
+   * udf to have 2d Sparse Feature. The input is expected to be [[SparseVector]] with indices and values
    */
-  private def multiDimSparseVectorArray(outputSchema: StructType) =
+  val twoDimensionSparseFeature =
     udf(
       (arrayOfSp: Seq[Row]) => {
         val indices0 = mutable.ArrayBuffer[Long]()
@@ -224,7 +220,7 @@ object PrepRankingData {
           values ++= sp.getAs[Seq[Float]](Constants.VALUES)
         }
         Row(indices0, indices1, values)
-      }, outputSchema)
+      }, twoDimensionSparseFeatureSchema)
 
   /**
    * From data schema to get correct udf
