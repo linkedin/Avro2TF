@@ -49,7 +49,8 @@ case class Avro2TFParams(
   partitionFieldName: String,
   termOnlyFeatureList: Boolean,
   discardUnknownEntries: Boolean,
-  enableFilterZero: Boolean
+  enableFilterZero: Boolean,
+  passThrough:Boolean
 )
 
 /**
@@ -200,8 +201,9 @@ object Avro2TFJobParamsParser {
           avro2TFParams.copy(avro2TFConfig = avro2TFConfiguration)
         }
       )
+      .optional()
       .text(
-        """Required.
+        """Optional.
           |The Avro2TF configuration in JSON format.""".stripMargin
       )
 
@@ -328,6 +330,16 @@ object Avro2TFJobParamsParser {
         """Optional.
           |Whether to enable filter zero for all sparse vector output. Default is false""".stripMargin
       )
+
+    opt[Boolean](Avro2TFJobParamNames.PASS_THROUGH)
+      .action(
+        (passThrough, avro2TFParams) => avro2TFParams
+          .copy(passThrough = passThrough))
+      .optional()
+      .text(
+        """Optional.
+          |Whether to pass through inputs and only change outputs formats, num partitions, etc""".stripMargin
+      )
   }
 
   /**
@@ -360,7 +372,8 @@ object Avro2TFJobParamsParser {
         partitionFieldName = "",
         termOnlyFeatureList = false,
         discardUnknownEntries = false,
-        enableFilterZero = false
+        enableFilterZero = false,
+        passThrough = false
       )
     ) match {
       case Some(params) =>

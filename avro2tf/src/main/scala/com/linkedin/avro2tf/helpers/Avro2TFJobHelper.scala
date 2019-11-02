@@ -197,14 +197,14 @@ object Avro2TFJobHelper {
    */
   private def prepareTFRecord(dataFrame: DataFrame, params: Avro2TFParams): DataFrame = {
 
-    val outputTensorSparsity = Avro2TFConfigHelper.getOutputTensorSparsity(params)
     val newConvertedColumns = new mutable.ArrayBuffer[Column]
     val convertedColumnNames = new mutable.HashSet[String]
+    val invalidColumns = new mutable.HashSet[String]
     val dataFrameSchema = dataFrame.schema
 
-    outputTensorSparsity.foreach {
-      case (columnName, isSparse) =>
-        if (isSparse) {
+    dataFrame.columns.foreach {
+      columnName =>
+        if (CommonUtils.isSparseVector(dataFrameSchema(columnName).dataType)) {
           // Construct two separate indices and values columns for SparseVector data type
           newConvertedColumns.append(expr(s"$columnName.$INDICES").alias(s"${columnName}_$INDICES"))
           newConvertedColumns.append(expr(s"$columnName.$VALUES").alias(s"${columnName}_$VALUES"))
@@ -213,10 +213,13 @@ object Avro2TFJobHelper {
           // Construct a new array of String array column for String array data type to be used with SequenceExample
           newConvertedColumns.append(wrapStringArray(dataFrame(columnName)).name(columnName))
           convertedColumnNames.add(columnName)
+        } else if (!CommonUtils.isValidTFRecordType(dataFrameSchema(columnName).dataType)) {
+          invalidColumns.add(columnName)
         }
     }
 
-    val nonConvertedColumns = dataFrame.columns.filter(colName => !convertedColumnNames.contains(colName))
+    val nonConvertedColumns = dataFrame.columns
+      .filter(colName => !convertedColumnNames.contains(colName) && !invalidColumns.contains(colName))
       .map(dataFrame(_))
     dataFrame.select(nonConvertedColumns ++ newConvertedColumns: _*)
   }

@@ -218,4 +218,19 @@ object CommonUtils {
     idValues.foreach(idValue => values(idValue.id.toInt) = idValue.value)
     values.toSeq
   }
+
+  /**
+   * Check if the type of a column is an valid TFRecord type
+   *
+   * @param dataType The schema type of a column
+   * @return is valid TFRecord type
+   */
+  def isValidTFRecordType(dataType: DataType): Boolean = {
+
+    dataType match {
+      case _: StructType => false
+      case _: MapType => false
+      case _ => true
+    }
+  }
 }
