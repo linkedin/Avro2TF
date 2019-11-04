@@ -30,14 +30,14 @@
   }, {
     "name" : "words_wideFeatures_sparse",
     "dtype" : "float",
-    "shape" : [ 398 ],
+    "shape" : [ 399 ],
     "numUniqueValues" : null,
     "isSparse" : true,
     "isDocumentFeature": true
   }, {
     "name" : "words_wideFeatures_dense",
     "dtype" : "float",
-    "shape" : [ 398 ],
+    "shape" : [ 399 ],
     "numUniqueValues" : null,
     "isSparse" : false,
     "isDocumentFeature": true

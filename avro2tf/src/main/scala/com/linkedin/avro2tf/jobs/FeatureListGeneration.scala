@@ -373,7 +373,8 @@ object FeatureListGeneration {
         val fileInputStream = fileSystem.open(featureListFile)
         scala.io.Source.fromInputStream(fileInputStream, UTF_8.name()).getLines().foreach {
           line => {
-            val lineWithoutCount = line.split(SPLIT_REGEX).head
+            val words = line.split(SPLIT_REGEX)
+            val lineWithoutCount = if (words.isEmpty) "" else words.head
             val count = line.split(SEPARATOR_FEATURE_COUNT).last.toLong
             if (isNTVFeatureList) {
               val nameAndTerm = lineWithoutCount.split(SEPARATOR_NAME_TERM)
