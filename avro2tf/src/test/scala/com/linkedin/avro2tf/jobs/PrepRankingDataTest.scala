@@ -10,6 +10,7 @@ import com.linkedin.avro2tf.utils.TestUtil.removeWhiteSpace
 import org.testng.annotations.Test
 import com.linkedin.avro2tf.utils.{IOUtils, TestUtil, WithLocalSparkSession}
 import org.apache.commons.io.FileUtils
+import org.apache.spark.sql.{DataFrame, Row}
 import org.testng.Assert._
 
 class PrepRankingDataTest extends WithLocalSparkSession {
@@ -61,6 +62,31 @@ class PrepRankingDataTest extends WithLocalSparkSession {
       removeWhiteSpace(Source.fromFile(outputMetadataFile).mkString),
       removeWhiteSpace(Source.fromFile(expectedTensorMetadata).mkString)
     )
+
+    val df = IOUtils.readAvro(session, params.outputDataPath)
+    // verify sparse feature schema is correct
+    validateSparseFeatureOutputSchema(df, Seq("genreFeatures", "genreFeatures_movieLatentFactorFeatures", "genreFeatures_movieLatentFactorFeatures_response"))
+  }
+
+  /**
+    * For 2D Sparse feature schema is similar as https://www.tensorflow.org/api_docs/python/tf/io/SparseFeature, which has column major indices:
+    * indices0: longArray
+    * indices1: longArray
+    * values: floatArray
+    * This method is to validate the output schema is expected
+    */
+  def validateSparseFeatureOutputSchema(df: DataFrame, sparseFeatures: Seq[String]) = {
+    sparseFeatures.foreach {
+      feature =>
+        df.select(feature).collect().foreach {
+          row =>
+            val indices0 = row.getAs[Row](0).getAs[Seq[Long]]("indices0")
+            val indices1 = row.getAs[Row](0).getAs[Seq[Long]]("indices1")
+            val values = row.getAs[Row](0).getAs[Seq[Float]]("values")
+            assertEquals(indices0.length, indices1.length)
+            assertEquals(values.length, indices1.length)
+        }
+    }
   }
 
   /**

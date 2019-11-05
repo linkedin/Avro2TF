@@ -1,7 +1,6 @@
 package com.linkedin.avro2tf.jobs
 
 import scala.collection.mutable
-
 import com.databricks.spark.avro._
 import com.linkedin.avro2tf.configs.TensorMetadata
 import com.linkedin.avro2tf.constants.Constants
@@ -15,7 +14,7 @@ import io.circe.syntax._
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.sql._
 import org.apache.spark.sql.functions._
-import org.apache.spark.sql.types.{ArrayType, DoubleType, FloatType, IntegerType, LongType, StringType, StructType, DataType => ADataType}
+import org.apache.spark.sql.types.{ArrayType, DoubleType, FloatType, IntegerType, LongType, StringType, StructField, StructType, DataType => ADataType}
 import org.slf4j.{Logger, LoggerFactory}
 
 /**
@@ -128,7 +127,7 @@ object PrepRankingData {
         CommonUtils.isArrayOfSparseVector(truncateDf.schema(it).dataType))
 
     documentFeaturesWithSpVec.foreach { it =>
-      truncateDf = truncateDf.withColumn(it, flattenSparseVectorArray(col(it)))
+      truncateDf = truncateDf.withColumn(it, twoDimensionSparseFeature(col(it)))
     }
 
     // write to disk
@@ -140,6 +139,24 @@ object PrepRankingData {
     if (params.executionMode == TrainingMode.training) {
       updateMetadata(spark, params, documentFeatures, metadata)
     }
+  }
+
+  /**
+    * Based on input rank, to generate schema for the output. It's used for rank larger than 1. For rank1, it's using [[SparseVector]] directly
+    * The N-Dimension Sparse feature schema is similar as https://www.tensorflow.org/api_docs/python/tf/io/SparseFeature, which has column major indices
+    * @param rank input rank, should be larger than 1
+    * @return if rank == n, then the returned schema is:
+    *         indices0: longArray
+    *         indices1: longArray
+    *         ...
+    *         indices(n-1): longArray
+    *         values: floatArray
+    */
+  def generateSchemaForMultiDimSparseFeature(rank: Int): StructType = {
+    require(rank > 1, s"Input rank should larger than 1 but found [$rank] instead")
+    val indices = "indices"
+    val values = "values"
+    StructType((0 until rank).map(index => StructField(indices + index, ArrayType(LongType))) :+ StructField(values, ArrayType(FloatType)))
   }
 
   /**
@@ -186,21 +203,24 @@ object PrepRankingData {
     )
   }
 
+  val twoDimensionSparseFeatureSchema = generateSchemaForMultiDimSparseFeature(2)
   /**
-   * udf to flatten the 2d sparse tensor to 1d.
+   * udf to have 2d Sparse Feature. The input is expected to be [[SparseVector]] with indices and values
    */
-  private val flattenSparseVectorArray =
+  val twoDimensionSparseFeature =
     udf(
       (arrayOfSp: Seq[Row]) => {
-
-        val indices = mutable.ArrayBuffer[Long]()
+        val indices0 = mutable.ArrayBuffer[Long]()
+        val indices1 = mutable.ArrayBuffer[Long]()
         val values = mutable.ArrayBuffer[Float]()
         arrayOfSp.zipWithIndex.map { case (sp, index) =>
-          indices ++= sp.getAs[Seq[Long]](Constants.INDICES).flatMap(x => Seq(index, x))
+          val currIndices = sp.getAs[Seq[Long]](Constants.INDICES)
+          indices0 ++= List.fill(currIndices.length)(index.toLong)
+          indices1 ++= currIndices
           values ++= sp.getAs[Seq[Float]](Constants.VALUES)
         }
-        SparseVector(indices, values)
-      })
+        Row(indices0, indices1, values)
+      }, twoDimensionSparseFeatureSchema)
 
   /**
    * From data schema to get correct udf
