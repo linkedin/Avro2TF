@@ -25,7 +25,7 @@ object Avro2TF {
     // Read input data from HDFS to Spark DataFrame
     var dataFrame = Avro2TFJobHelper.readDataFromHDFS(spark, params)
 
-    if (params.passThrough) {
+    if (params.passThroughOnly) {
       Avro2TFJobHelper.saveDataToHDFS(dataFrame, params)
     } else {
       require(params.avro2TFConfig != null, "Must specify avro2tf-config")

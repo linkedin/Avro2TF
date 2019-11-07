@@ -276,7 +276,7 @@ class Avro2TFJobParamsParserTest {
       termOnlyFeatureList = false,
       discardUnknownEntries = false,
       enableFilterZero = false,
-      passThrough = false
+      passThroughOnly = false
     )
   }
 
