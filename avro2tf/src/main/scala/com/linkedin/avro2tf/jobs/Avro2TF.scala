@@ -25,32 +25,37 @@ object Avro2TF {
     // Read input data from HDFS to Spark DataFrame
     var dataFrame = Avro2TFJobHelper.readDataFromHDFS(spark, params)
 
-    // Sanity check on tensor names specified in Avro2TF config
-    Avro2TFJobHelper.tensorsNameCheck(dataFrame, params)
-
-    // Extracts features that will be converted to tensors
-    dataFrame = FeatureExtraction.run(dataFrame, params)
-
-    // Transforms features that will be converted to tensors
-    dataFrame = FeatureTransformation.run(dataFrame, params)
-
-    // Generate tensor metadata only in train mode; otherwise, directly load existing ones from working directory
-    if (params.executionMode == TrainingMode.training) {
-      if (params.enableCache) dataFrame.persist(StorageLevel.MEMORY_AND_DISK_SER)
-
-      // Generate tensor metadata
-      FeatureListGeneration.run(dataFrame, params)
-      TensorMetadataGeneration.run(dataFrame, params)
-    }
-
-    // Convert indices if not skipped
-    if (!params.skipConversion) {
-      // Convert String indices to numerical Id indices
-      dataFrame = FeatureIndicesConversion.run(dataFrame, params)
-      if (params.partitionFieldName.nonEmpty) {
-        dataFrame = PartitionIdGeneration.run(dataFrame, params)
-      }
+    if (params.passThroughOnly) {
       Avro2TFJobHelper.saveDataToHDFS(dataFrame, params)
+    } else {
+      require(params.avro2TFConfig != null, "Must specify avro2tf-config")
+      // Sanity check on tensor names specified in Avro2TF config
+      Avro2TFJobHelper.tensorsNameCheck(dataFrame, params)
+
+      // Extracts features that will be converted to tensors
+      dataFrame = FeatureExtraction.run(dataFrame, params)
+
+      // Transforms features that will be converted to tensors
+      dataFrame = FeatureTransformation.run(dataFrame, params)
+
+      // Generate tensor metadata only in train mode; otherwise, directly load existing ones from working directory
+      if (params.executionMode == TrainingMode.training) {
+        if (params.enableCache) dataFrame.persist(StorageLevel.MEMORY_AND_DISK_SER)
+
+        // Generate tensor metadata
+        FeatureListGeneration.run(dataFrame, params)
+        TensorMetadataGeneration.run(dataFrame, params)
+      }
+
+      // Convert indices if not skipped
+      if (!params.skipConversion) {
+        // Convert String indices to numerical Id indices
+        dataFrame = FeatureIndicesConversion.run(dataFrame, params)
+        if (params.partitionFieldName.nonEmpty) {
+          dataFrame = PartitionIdGeneration.run(dataFrame, params)
+        }
+        Avro2TFJobHelper.saveDataToHDFS(dataFrame, params)
+      }
     }
   }
 

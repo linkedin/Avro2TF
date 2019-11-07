@@ -26,4 +26,5 @@ object Avro2TFJobParamNames {
   final val ENABLE_TERM_ONLY_FEATURE_LIST = "enable-term-only-feature-list"
   final val DISCARD_UNKNOWN_ENTRIES = "discard-unknown-entries"
   final val ENABLE_FILTER_ZERO = "enable-filter-zero"
+  final val PASS_THROUGH_ONLY = "pass-through-only"
 }

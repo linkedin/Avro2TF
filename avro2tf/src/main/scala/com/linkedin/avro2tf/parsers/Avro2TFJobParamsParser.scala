@@ -28,6 +28,7 @@ import org.apache.hadoop.mapred.JobConf
  * @param skipConversion Indicate whether to skip the conversion step
  * @param outputFormat Output format of tensorized data, e.g. Avro or TFRecord
  * @param enableFilterZero Filter out zeros in Sparse vector output. Once it's turned on, it will be applied to all sparse vector output
+ * @param passThroughOnly Whether to pass through inputs and only change outputs formats, num partitions, etc.
  */
 case class Avro2TFParams(
   inputPaths: Seq[String],
@@ -49,7 +50,8 @@ case class Avro2TFParams(
   partitionFieldName: String,
   termOnlyFeatureList: Boolean,
   discardUnknownEntries: Boolean,
-  enableFilterZero: Boolean
+  enableFilterZero: Boolean,
+  passThroughOnly: Boolean
 )
 
 /**
@@ -200,8 +202,9 @@ object Avro2TFJobParamsParser {
           avro2TFParams.copy(avro2TFConfig = avro2TFConfiguration)
         }
       )
+      .optional()
       .text(
-        """Required.
+        """Optional.
           |The Avro2TF configuration in JSON format.""".stripMargin
       )
 
@@ -328,6 +331,14 @@ object Avro2TFJobParamsParser {
         """Optional.
           |Whether to enable filter zero for all sparse vector output. Default is false""".stripMargin
       )
+
+    opt[Boolean](Avro2TFJobParamNames.PASS_THROUGH_ONLY)
+      .action((passThrough, avro2TFParams) => avro2TFParams.copy(passThroughOnly = passThrough))
+      .optional()
+      .text(
+        """Optional.
+          |Whether to pass through inputs and only change outputs formats, num partitions, etc""".stripMargin
+      )
   }
 
   /**
@@ -360,7 +371,8 @@ object Avro2TFJobParamsParser {
         partitionFieldName = "",
         termOnlyFeatureList = false,
         discardUnknownEntries = false,
-        enableFilterZero = false
+        enableFilterZero = false,
+        passThroughOnly = false
       )
     ) match {
       case Some(params) =>

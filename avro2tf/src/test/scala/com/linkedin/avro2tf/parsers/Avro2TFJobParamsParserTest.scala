@@ -275,7 +275,8 @@ class Avro2TFJobParamsParserTest {
       partitionFieldName = "",
       termOnlyFeatureList = false,
       discardUnknownEntries = false,
-      enableFilterZero = false
+      enableFilterZero = false,
+      passThroughOnly = false
     )
   }
 
