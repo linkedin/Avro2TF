@@ -317,7 +317,7 @@ object FeatureListGeneration {
                           )
                         }
                       }
-                      prefixSplit.last
+                      prefixSplit.drop(1).mkString(SEPARATOR_NAME_TERM)
                     }
                     else {
                       lineWithoutCount
@@ -378,8 +378,8 @@ object FeatureListGeneration {
             val count = line.split(SEPARATOR_FEATURE_COUNT).last.toLong
             if (isNTVFeatureList) {
               val nameAndTerm = lineWithoutCount.split(SEPARATOR_NAME_TERM)
-              require(nameAndTerm.size == 2, s"Extra $SEPARATOR_NAME_TERM found in name-term string: $lineWithoutCount")
-              featureEntriesWCount(nameAndTerm.last) += count
+              require(nameAndTerm.size >= 2, s"Need at least name and term with $SEPARATOR_NAME_TERM: $lineWithoutCount")
+              featureEntriesWCount(nameAndTerm.drop(1).mkString(SEPARATOR_NAME_TERM)) += count
             } else {
               featureEntriesWCount(lineWithoutCount) += count
             }
