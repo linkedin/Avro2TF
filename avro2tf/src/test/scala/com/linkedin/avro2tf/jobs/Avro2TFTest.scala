@@ -3,6 +3,7 @@ package com.linkedin.avro2tf.jobs
 import java.io.{File, FileOutputStream, PrintWriter}
 
 import com.linkedin.avro2tf.constants.Avro2TFJobParamNames
+import com.linkedin.avro2tf.constants.Constants.SPLIT_REGEX
 import com.linkedin.avro2tf.parsers.Avro2TFJobParamsParser
 import com.linkedin.avro2tf.utils.ConstantsForTest._
 import com.linkedin.avro2tf.utils.{CommonUtils, IOUtils, TestUtil, TrainingMode, WithLocalSparkSession}
