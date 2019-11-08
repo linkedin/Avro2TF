@@ -1,4 +1,5 @@
-mon_fruits,apple,3
+mon_fruits,apple,2
+mon_fruits,apple, 123,@%.-_a$,1
 mon_fruits,banana,1
 mon_fruits,kiwi,1
 mon_fruits,pear,3

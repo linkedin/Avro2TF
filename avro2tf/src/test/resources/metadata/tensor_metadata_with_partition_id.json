@@ -2,7 +2,7 @@
   "features" : [ {
     "name" : "fruits_day1",
     "dtype" : "float",
-    "shape" : [ 7 ],
+    "shape" : [ 8 ],
     "cardinality" : null,
     "isSparse" : true,
     "isDocumentFeature": true
