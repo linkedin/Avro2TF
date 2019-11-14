@@ -29,6 +29,7 @@ import org.apache.hadoop.mapred.JobConf
  * @param outputFormat Output format of tensorized data, e.g. Avro or TFRecord
  * @param enableFilterZero Filter out zeros in Sparse vector output. Once it's turned on, it will be applied to all sparse vector output
  * @param passThroughOnly Whether to pass through inputs and only change outputs formats, num partitions, etc.
+ * @param featureListCap A map of feature name to its max feature list size. Useful for doing subset.
  */
 case class Avro2TFParams(
   inputPaths: Seq[String],
@@ -51,7 +52,8 @@ case class Avro2TFParams(
   termOnlyFeatureList: Boolean,
   discardUnknownEntries: Boolean,
   enableFilterZero: Boolean,
-  passThroughOnly: Boolean
+  passThroughOnly: Boolean,
+  featureListCap: Map[String, Int]
 )
 
 /**
@@ -339,6 +341,23 @@ object Avro2TFJobParamsParser {
         """Optional.
           |Whether to pass through inputs and only change outputs formats, num partitions, etc""".stripMargin
       )
+
+    opt[Seq[String]](Avro2TFJobParamNames.FEATURE_LIST_CAP)
+      .action {
+        (featureListCapStr, avro2TFParams) =>
+          val featureListCap = featureListCapStr.map { capStrEntry =>
+            val nameAndCap = capStrEntry.split(":")
+            require(nameAndCap.size == 2, "Please specify both feature name and its cap, e.g. f1:32,f2:23")
+            nameAndCap.head -> nameAndCap.last.toInt
+          }.toMap
+          avro2TFParams.copy(featureListCap = featureListCap)
+      }
+      .optional()
+      .text(
+        """Optional.
+          |A list of comma separated feature cap string of feature name to its max feature list size.
+          |Each feature cap string has the format of featureName:capSize""".stripMargin
+      )
   }
 
   /**
@@ -372,7 +391,8 @@ object Avro2TFJobParamsParser {
         termOnlyFeatureList = false,
         discardUnknownEntries = false,
         enableFilterZero = false,
-        passThroughOnly = false
+        passThroughOnly = false,
+        featureListCap = Map.empty[String, Int]
       )
     ) match {
       case Some(params) =>

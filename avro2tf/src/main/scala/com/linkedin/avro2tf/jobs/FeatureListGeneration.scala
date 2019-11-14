@@ -29,6 +29,10 @@ object FeatureListGeneration {
    */
   def run(dataFrame: DataFrame, params: Avro2TFParams): Unit = {
 
+    require(
+      params.featureListCap.keys.toSet.subsetOf(Avro2TFConfigHelper.getOutputTensorNames(params).toSet),
+      "All features names in specified featureList cap must exist in output tensor names"
+    )
     val fileSystem = FileSystem.get(dataFrame.sparkSession.sparkContext.hadoopConfiguration)
 
     val featureListPath = new Path(params.workingDir.featureListPath)
@@ -331,17 +335,21 @@ object FeatureListGeneration {
         )
         // sort the feature list by count and then by feature entry (alphabetically)
         val featureList = featureEntriesWCount.toSeq.sortBy { case (k, v) => (-v, k) }
+        var cappedFeatureList = featureList
         // write out feature list file for each output tensor in the current group
         tensors.foreach(
           tensor => {
             val outputPath = new Path(s"${params.workingDir.featureListPath}/$tensor")
+            if (params.featureListCap.contains(tensor)) {
+              cappedFeatureList = featureList.take(params.featureListCap(tensor))
+            }
             val prefix: Option[String] = if (tensorsWithPrefix.contains(tensor)) {
               Some(tensorsWithPrefix(tensor))
             }
             else {
               None
             }
-            writeFeatureEntriesWCountToDisk(outputPath, featureList, prefix, fileSystem)
+            writeFeatureEntriesWCountToDisk(outputPath, cappedFeatureList, prefix, fileSystem)
           }
         )
       }
@@ -378,7 +386,9 @@ object FeatureListGeneration {
             val count = line.split(SEPARATOR_FEATURE_COUNT).last.toLong
             if (isNTVFeatureList) {
               val nameAndTerm = lineWithoutCount.split(SEPARATOR_NAME_TERM)
-              require(nameAndTerm.size >= 2, s"Need at least name and term with $SEPARATOR_NAME_TERM: $lineWithoutCount")
+              require(
+                nameAndTerm.size >= 2,
+                s"Need at least name and term with $SEPARATOR_NAME_TERM: $lineWithoutCount")
               featureEntriesWCount(nameAndTerm.drop(1).mkString(SEPARATOR_NAME_TERM)) += count
             } else {
               featureEntriesWCount(lineWithoutCount) += count
@@ -389,8 +399,13 @@ object FeatureListGeneration {
 
       // sort the feature list by count and then by feature entry (alphabetically)
       val featureList = featureEntriesWCount.toSeq.sortBy { case (k, v) => (-v, k) }
+      val cappedFeatureList = if (params.featureListCap.contains(tensorName)) {
+        featureList.take(params.featureListCap(tensorName))
+      } else {
+        featureList
+      }
       val outputPath = new Path(s"${params.workingDir.termOnlyFeatureListPath}/$tensorName")
-      writeFeatureEntriesWCountToDisk(outputPath, featureList, None, fileSystem)
+      writeFeatureEntriesWCountToDisk(outputPath, cappedFeatureList, None, fileSystem)
     }
   }
 }

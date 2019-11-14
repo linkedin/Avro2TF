@@ -372,6 +372,50 @@ class FeatureListGenerationTest extends WithLocalSparkSession {
     val expectedTerms = termCounts.toSeq.sortBy { case (k, v) => (-v, k) }.map(_._1)
     assertEquals(terms, expectedTerms)
 
+    termFileStream.close()
+    nameTermFileStream.close()
+    fileSystem.close()
+  }
+
+  /**
+   * Test the correctness of feature list size capping
+   *
+   */
+  @Test
+  def testFeatureListCapping(): Unit = {
+
+    val avro2TFConfig = new File(
+      getClass.getClassLoader.getResource(AVRO2TF_CONFIG_PATH_VALUE_SHARE_FEATURE).getFile
+    ).getAbsolutePath
+    FileUtils.deleteDirectory(new File(WORKING_DIRECTORY_FEATURE_LIST_GENERATION_TEXT))
+
+    val capSize = 1
+    val params = Map(
+      Avro2TFJobParamNames.INPUT_PATHS -> INPUT_SHARE_FEATURE_PATH,
+      Avro2TFJobParamNames.WORKING_DIR -> WORKING_DIRECTORY_FEATURE_LIST_GENERATION_TEXT,
+      Avro2TFJobParamNames.AVRO2TF_CONFIG_PATH -> avro2TFConfig,
+      Avro2TFJobParamNames.ENABLE_TERM_ONLY_FEATURE_LIST -> "true",
+      Avro2TFJobParamNames.FEATURE_LIST_CAP -> s"$MIX_NTV_FEATURE_NAME:$capSize"
+    )
+
+    val dataFrame = session.read.avro(INPUT_SHARE_FEATURE_PATH)
+    val avro2TFParams = Avro2TFJobParamsParser.parse(TestUtil.convertParamMapToParamList(params))
+
+    val dataFrameExtracted = FeatureExtraction.run(dataFrame, avro2TFParams)
+    FeatureListGeneration.run(dataFrameExtracted, avro2TFParams)
+
+    // get actual generated feature list
+    val fileSystem = FileSystem.get(session.sparkContext.hadoopConfiguration)
+
+    val termFileStream = fileSystem
+      .open(new Path(avro2TFParams.workingDir.termOnlyFeatureListPath, MIX_NTV_FEATURE_NAME))
+    assertEquals(scala.io.Source.fromInputStream(termFileStream, UTF_8.name()).getLines().size, capSize)
+    val nameTermFileStream = fileSystem
+      .open(new Path(avro2TFParams.workingDir.featureListPath, MIX_NTV_FEATURE_NAME))
+    assertEquals(scala.io.Source.fromInputStream(nameTermFileStream, UTF_8.name()).getLines().size, capSize)
+
+    termFileStream.close()
+    nameTermFileStream.close()
     fileSystem.close()
   }
 }
