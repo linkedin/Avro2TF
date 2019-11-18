@@ -276,8 +276,7 @@ class Avro2TFJobParamsParserTest {
       termOnlyFeatureList = false,
       discardUnknownEntries = false,
       enableFilterZero = false,
-      passThroughOnly = false,
-      featureListCap = Map.empty[String, Int]
+      passThroughOnly = false
     )
   }
 

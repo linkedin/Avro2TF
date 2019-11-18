@@ -385,7 +385,7 @@ class FeatureListGenerationTest extends WithLocalSparkSession {
   def testFeatureListCapping(): Unit = {
 
     val avro2TFConfig = new File(
-      getClass.getClassLoader.getResource(AVRO2TF_CONFIG_PATH_VALUE_SHARE_FEATURE).getFile
+      getClass.getClassLoader.getResource(AVRO2TF_CONFIG_PATH_VALUE_VOCAB_SIZE_CAP).getFile
     ).getAbsolutePath
     FileUtils.deleteDirectory(new File(WORKING_DIRECTORY_FEATURE_LIST_GENERATION_TEXT))
 
@@ -394,8 +394,7 @@ class FeatureListGenerationTest extends WithLocalSparkSession {
       Avro2TFJobParamNames.INPUT_PATHS -> INPUT_SHARE_FEATURE_PATH,
       Avro2TFJobParamNames.WORKING_DIR -> WORKING_DIRECTORY_FEATURE_LIST_GENERATION_TEXT,
       Avro2TFJobParamNames.AVRO2TF_CONFIG_PATH -> avro2TFConfig,
-      Avro2TFJobParamNames.ENABLE_TERM_ONLY_FEATURE_LIST -> "true",
-      Avro2TFJobParamNames.FEATURE_LIST_CAP -> s"$MIX_NTV_FEATURE_NAME:$capSize"
+      Avro2TFJobParamNames.ENABLE_TERM_ONLY_FEATURE_LIST -> "true"
     )
 
     val dataFrame = session.read.avro(INPUT_SHARE_FEATURE_PATH)

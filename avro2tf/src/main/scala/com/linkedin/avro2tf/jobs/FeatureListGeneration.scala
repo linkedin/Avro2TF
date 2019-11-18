@@ -29,10 +29,6 @@ object FeatureListGeneration {
    */
   def run(dataFrame: DataFrame, params: Avro2TFParams): Unit = {
 
-    require(
-      params.featureListCap.keys.toSet.subsetOf(Avro2TFConfigHelper.getOutputTensorNames(params).toSet),
-      "All features names in specified featureList cap must exist in output tensor names"
-    )
     val fileSystem = FileSystem.get(dataFrame.sparkSession.sparkContext.hadoopConfiguration)
 
     val featureListPath = new Path(params.workingDir.featureListPath)
@@ -280,6 +276,7 @@ object FeatureListGeneration {
 
     val tensorGroups = getTensorGroupsToWriteFeatureLists(params, fileSystem)
     val tmpFeatureListDir = s"${params.workingDir.rootPath}/$TMP_FEATURE_LIST"
+    val vocabSizeCap = Avro2TFConfigHelper.getOutputTensorVocabSizeCap(params)
     // merge and write feature lists for output tensors with shared feature list setting
     tensorGroups.foreach( // each element is an array containing the output tensor names sharing one feature list
       tensors => {
@@ -340,8 +337,8 @@ object FeatureListGeneration {
         tensors.foreach(
           tensor => {
             val outputPath = new Path(s"${params.workingDir.featureListPath}/$tensor")
-            if (params.featureListCap.contains(tensor)) {
-              cappedFeatureList = featureList.take(params.featureListCap(tensor))
+            if (vocabSizeCap.contains(tensor)) {
+              cappedFeatureList = featureList.take(vocabSizeCap(tensor))
             }
             val prefix: Option[String] = if (tensorsWithPrefix.contains(tensor)) {
               Some(tensorsWithPrefix(tensor))
@@ -371,6 +368,7 @@ object FeatureListGeneration {
     colsToCollectFeatureList: Seq[String]): Unit = {
 
     val tmpFeatureListDir = s"${params.workingDir.rootPath}/$TMP_FEATURE_LIST"
+    val vocabSizeCap = Avro2TFConfigHelper.getOutputTensorVocabSizeCap(params)
     colsToCollectFeatureList.foreach { tensorName =>
       val featureListDirForCurrentTensor = new Path(s"$tmpFeatureListDir/$COLUMN_NAME=$tensorName")
       val filesIterator = fileSystem.listFiles(featureListDirForCurrentTensor, ENABLE_RECURSIVE)
@@ -399,8 +397,8 @@ object FeatureListGeneration {
 
       // sort the feature list by count and then by feature entry (alphabetically)
       val featureList = featureEntriesWCount.toSeq.sortBy { case (k, v) => (-v, k) }
-      val cappedFeatureList = if (params.featureListCap.contains(tensorName)) {
-        featureList.take(params.featureListCap(tensorName))
+      val cappedFeatureList = if (vocabSizeCap.contains(tensorName)) {
+        featureList.take(vocabSizeCap(tensorName))
       } else {
         featureList
       }

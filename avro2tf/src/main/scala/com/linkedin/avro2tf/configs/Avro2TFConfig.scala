@@ -106,13 +106,17 @@ case class InputFeatureInfo(
  * @param name Name of tensor
  * @param dtype Data type of tensor
  * @param shape Shape of tensor
+ * @param isSparse If it's sparse feature.
+ * @param isDocumentFeature If it's document feature.
+ * @param vocabSizeCap The max size of its feature vocab entries. The entries with top frequencies will be kept.
  */
 case class OutputTensorInfo(
   name: String,
   @JsonScalaEnumeration(classOf[DataTypeRef]) dtype: DataType.DataType,
   shape: Seq[Int] = Seq(),
   isSparse: Boolean = false,
-  isDocumentFeature: Boolean = true) {
+  isDocumentFeature: Boolean = true,
+  vocabSizeCap: Option[Int] = None) {
 
   // Array is a Java array, so we need to implement equals
   override def equals(that: Any): Boolean =
@@ -121,10 +125,13 @@ case class OutputTensorInfo(
         that.canEqual(this) &&
           this.name == that.name &&
           this.dtype == that.dtype &&
-          this.shape.sameElements(that.shape)
+          this.shape.sameElements(that.shape) &&
+          this.isSparse == that.isSparse &&
+          this.isDocumentFeature == that.isDocumentFeature &&
+          this.vocabSizeCap == that.vocabSizeCap
       case _ => false
     }
 
   override def hashCode(): Int =
-    Objects.hash(name, dtype.toString, shape)
+    Objects.hash(name, dtype.toString, shape, isSparse.toString, isDocumentFeature.toString, vocabSizeCap.toString)
 }

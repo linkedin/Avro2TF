@@ -1,0 +1,119 @@
+{
+  "features": [
+    {
+      "inputFeatureInfo": {
+        "columnConfig": {
+          "mon_fruits": {
+            "whitelist": [
+              "*"
+            ]
+          }
+        }
+      },
+      "outputTensorInfo": {
+        "name": "fruits_day1",
+        "dtype": "float",
+        "shape": [],
+        "isSparse": true
+      }
+    },
+    {
+      "inputFeatureInfo": {
+        "columnConfig": {
+          "tue_fruits": {
+            "whitelist": [
+              "*"
+            ]
+          }
+        }
+      },
+      "outputTensorInfo": {
+        "name": "fruits_day2",
+        "dtype": "float",
+        "shape": [],
+        "isSparse": true
+      }
+    },
+    {
+      "inputFeatureInfo": {
+        "columnConfig": {
+          "wed_fruits": {
+            "whitelist": [
+              "*"
+            ]
+          }
+        }
+      },
+      "outputTensorInfo": {
+        "name": "fruits_day3",
+        "dtype": "float",
+        "shape": [],
+        "isSparse": true
+      }
+    },
+    {
+      "inputFeatureInfo": {
+        "columnConfig": {
+          "thu_fruits": {
+            "whitelist": [
+              "*"
+            ]
+          }
+        }
+      },
+      "outputTensorInfo": {
+        "name": "fruits_day4",
+        "dtype": "float",
+        "shape": [],
+        "isSparse": true,
+        "vocabSizeCap": 1
+      }
+    },
+    {
+      "inputFeatureInfo": {
+        "columnExpr": "words_before"
+      },
+      "outputTensorInfo": {
+        "name": "comments_before",
+        "dtype": "long",
+        "shape": [
+          -1
+        ]
+      }
+    },
+    {
+      "inputFeatureInfo": {
+        "columnExpr": "send"
+      },
+      "outputTensorInfo": {
+        "name": "send_platform",
+        "dtype": "long",
+        "shape": []
+      }
+    },
+    {
+      "inputFeatureInfo": {
+        "columnExpr": "receive"
+      },
+      "outputTensorInfo": {
+        "name": "receive_platform",
+        "dtype": "long",
+        "shape": []
+      }
+    }
+  ],
+  "labels": [
+    {
+      "inputFeatureInfo": {
+        "columnExpr": "words_after"
+      },
+      "outputTensorInfo": {
+        "name": "comments_after",
+        "dtype": "long",
+        "shape": [
+          -1
+        ]
+      }
+    }
+  ]
+}
