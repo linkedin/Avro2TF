@@ -29,7 +29,7 @@ import org.apache.hadoop.mapred.JobConf
  * @param outputFormat Output format of tensorized data, e.g. Avro or TFRecord
  * @param enableFilterZero Filter out zeros in Sparse vector output. Once it's turned on, it will be applied to all sparse vector output
  * @param passThroughOnly Whether to pass through inputs and only change outputs formats, num partitions, etc.
- * @param featureListCap A map of feature name to its max feature list size. Useful for doing subset.
+ * @param featureListCap A map of feature name to its max feature list size. Useful for doing subset. The feature entries with top frequencies will be kept.
  */
 case class Avro2TFParams(
   inputPaths: Seq[String],
@@ -356,6 +356,7 @@ object Avro2TFJobParamsParser {
       .text(
         """Optional.
           |A list of comma separated feature cap string of feature name to its max feature list size.
+          |The feature entries with top frequencies will be kept.
           |Each feature cap string has the format of featureName:capSize""".stripMargin
       )
   }
