@@ -133,5 +133,11 @@ case class OutputTensorInfo(
     }
 
   override def hashCode(): Int =
-    Objects.hash(name, dtype.toString, shape, isSparse.toString, isDocumentFeature.toString, vocabSizeCap.toString)
+    Objects.hash(
+      name,
+      dtype.toString,
+      shape,
+      isSparse.toString,
+      isDocumentFeature.toString,
+      vocabSizeCap.map(_.toString))
 }
