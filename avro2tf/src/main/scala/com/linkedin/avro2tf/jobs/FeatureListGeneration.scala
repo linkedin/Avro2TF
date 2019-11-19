@@ -276,6 +276,7 @@ object FeatureListGeneration {
 
     val tensorGroups = getTensorGroupsToWriteFeatureLists(params, fileSystem)
     val tmpFeatureListDir = s"${params.workingDir.rootPath}/$TMP_FEATURE_LIST"
+    val vocabSizeCap = Avro2TFConfigHelper.getOutputTensorVocabSizeCap(params)
     // merge and write feature lists for output tensors with shared feature list setting
     tensorGroups.foreach( // each element is an array containing the output tensor names sharing one feature list
       tensors => {
@@ -331,17 +332,21 @@ object FeatureListGeneration {
         )
         // sort the feature list by count and then by feature entry (alphabetically)
         val featureList = featureEntriesWCount.toSeq.sortBy { case (k, v) => (-v, k) }
+        var cappedFeatureList = featureList
         // write out feature list file for each output tensor in the current group
         tensors.foreach(
           tensor => {
             val outputPath = new Path(s"${params.workingDir.featureListPath}/$tensor")
+            if (vocabSizeCap.contains(tensor)) {
+              cappedFeatureList = featureList.take(vocabSizeCap(tensor))
+            }
             val prefix: Option[String] = if (tensorsWithPrefix.contains(tensor)) {
               Some(tensorsWithPrefix(tensor))
             }
             else {
               None
             }
-            writeFeatureEntriesWCountToDisk(outputPath, featureList, prefix, fileSystem)
+            writeFeatureEntriesWCountToDisk(outputPath, cappedFeatureList, prefix, fileSystem)
           }
         )
       }
@@ -363,6 +368,7 @@ object FeatureListGeneration {
     colsToCollectFeatureList: Seq[String]): Unit = {
 
     val tmpFeatureListDir = s"${params.workingDir.rootPath}/$TMP_FEATURE_LIST"
+    val vocabSizeCap = Avro2TFConfigHelper.getOutputTensorVocabSizeCap(params)
     colsToCollectFeatureList.foreach { tensorName =>
       val featureListDirForCurrentTensor = new Path(s"$tmpFeatureListDir/$COLUMN_NAME=$tensorName")
       val filesIterator = fileSystem.listFiles(featureListDirForCurrentTensor, ENABLE_RECURSIVE)
@@ -378,7 +384,9 @@ object FeatureListGeneration {
             val count = line.split(SEPARATOR_FEATURE_COUNT).last.toLong
             if (isNTVFeatureList) {
               val nameAndTerm = lineWithoutCount.split(SEPARATOR_NAME_TERM)
-              require(nameAndTerm.size >= 2, s"Need at least name and term with $SEPARATOR_NAME_TERM: $lineWithoutCount")
+              require(
+                nameAndTerm.size >= 2,
+                s"Need at least name and term with $SEPARATOR_NAME_TERM: $lineWithoutCount")
               featureEntriesWCount(nameAndTerm.drop(1).mkString(SEPARATOR_NAME_TERM)) += count
             } else {
               featureEntriesWCount(lineWithoutCount) += count
@@ -389,8 +397,13 @@ object FeatureListGeneration {
 
       // sort the feature list by count and then by feature entry (alphabetically)
       val featureList = featureEntriesWCount.toSeq.sortBy { case (k, v) => (-v, k) }
+      val cappedFeatureList = if (vocabSizeCap.contains(tensorName)) {
+        featureList.take(vocabSizeCap(tensorName))
+      } else {
+        featureList
+      }
       val outputPath = new Path(s"${params.workingDir.termOnlyFeatureListPath}/$tensorName")
-      writeFeatureEntriesWCountToDisk(outputPath, featureList, None, fileSystem)
+      writeFeatureEntriesWCountToDisk(outputPath, cappedFeatureList, None, fileSystem)
     }
   }
 }

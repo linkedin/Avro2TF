@@ -50,6 +50,7 @@ object ConstantsForTest {
     "configs/avro2tf_config_without_int_features.json"
   final val AVRO2TF_CONFIG_PATH_VALUE_TEXT_SEQ = "configs/avro2tf_config_text_sequence.json"
   final val AVRO2TF_CONFIG_PATH_VALUE_SHARE_FEATURE = "configs/avro2tf_config_share_feature.json"
+  final val AVRO2TF_CONFIG_PATH_VALUE_VOCAB_SIZE_CAP = "configs/avro2tf_config_with_vocab_size_cap.json"
   final val AVRO2TF_CONFIG_TEST_ARRAY = Array.empty[Int]
   final val AVRO2TF_CONFIG_TEST_INFO = "testInfo"
   final val AVRO2TF_CONFIG_TEST_VALUE = "test_value"

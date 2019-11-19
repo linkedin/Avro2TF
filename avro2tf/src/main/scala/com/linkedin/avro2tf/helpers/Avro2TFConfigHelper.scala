@@ -82,4 +82,18 @@ object Avro2TFConfigHelper {
     concatFeaturesAndLabels(params).map(feature => feature.outputTensorInfo.name -> feature.outputTensorInfo.isSparse)
       .toMap
   }
+
+  /**
+   * Get output tensor vocab size cap from Avro2TF configuration
+   *
+   * @param params Avro2TF parameters specified by user
+   * @return A map of output tensor name to its vocab size cap.
+   */
+  def getOutputTensorVocabSizeCap(params: Avro2TFParams): Map[String, Int] = {
+
+    concatFeaturesAndLabels(params)
+      .filter(_.outputTensorInfo.vocabSizeCap.isDefined)
+      .map(feature => feature.outputTensorInfo.name -> feature.outputTensorInfo.vocabSizeCap.get)
+      .toMap
+  }
 }

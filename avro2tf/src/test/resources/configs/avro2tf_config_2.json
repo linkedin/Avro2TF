@@ -15,7 +15,8 @@
       "outputTensorInfo": {
         "name": "test_value",
         "dtype": "long",
-        "shape": []
+        "shape": [],
+        "vocabSizeCap": 100
       }
     }
   ],
