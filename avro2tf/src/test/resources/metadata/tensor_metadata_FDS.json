@@ -1,0 +1,102 @@
+{
+  "features" : [
+    {
+      "name" : "uid",
+      "dtype" : "int",
+      "shape" : [
+      ],
+      "numUniqueValues" : 100,
+      "isSparse" : false,
+      "isDocumentFeature" : true
+    },
+    {
+      "name" : "docId",
+      "dtype" : "int",
+      "shape" : [
+      ],
+      "numUniqueValues" : 10,
+      "isSparse" : false,
+      "isDocumentFeature" : true
+    },
+    {
+      "name" : "denseVector",
+      "dtype" : "double",
+      "shape" : [
+        3
+      ],
+      "numUniqueValues" : null,
+      "isSparse" : false,
+      "isDocumentFeature" : true
+    },
+    {
+      "name" : "double2DDenseVector",
+      "dtype" : "double",
+      "shape" : [
+        3, 3
+      ],
+      "numUniqueValues" : null,
+      "isSparse" : false,
+      "isDocumentFeature" : true
+    },
+    {
+      "name" : "double3DDenseTensor",
+      "dtype" : "double",
+      "shape" : [
+        2, 3, 4
+      ],
+      "numUniqueValues" : null,
+      "isSparse" : false,
+      "isDocumentFeature" : true
+    },
+    {
+      "name" : "float1DSparseTensor",
+      "dtype" : "float",
+      "shape" : [
+        10
+      ],
+      "numUniqueValues" : null,
+      "isSparse" : true,
+      "isDocumentFeature" : true
+    },
+    {
+      "name" : "float2DSparseTensor",
+      "dtype" : "float",
+      "shape" : [
+        5, 5
+      ],
+      "numUniqueValues" : null,
+      "isSparse" : true,
+      "isDocumentFeature" : true
+    },
+    {
+      "name" : "float4DSparseTensor",
+      "dtype" : "float",
+      "shape" : [
+        10, 2, 3, 4
+      ],
+      "numUniqueValues" : null,
+      "isSparse" : true,
+      "isDocumentFeature" : true
+    },
+    {
+      "name" : "primitive",
+      "dtype" : "float",
+      "shape" : [
+      ],
+      "numUniqueValues" : null,
+      "isSparse" : false,
+      "isDocumentFeature" : true
+    }
+  ],
+  "labels" : [
+    {
+      "name" : "label",
+      "dtype" : "int",
+      "shape" : [
+      ],
+      "numUniqueValues" : null,
+      "isSparse" : false,
+      "isDocumentFeature" : true
+    }
+  ]
+}

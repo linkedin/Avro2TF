@@ -74,7 +74,7 @@ class FeatureIndicesConversionTest extends WithLocalSparkSession {
     val convertedNTVSparseColummType = convertedDataFrame.schema(FEATURE_WORDS_WIDE_FEATURES_SPARSE_COL_NAME).dataType
     assertTrue(convertedNTVSparseColummType.isInstanceOf[StructType])
     val convertedNTVStructType = convertedNTVSparseColummType.asInstanceOf[StructType]
-    assertTrue(CommonUtils.isSparseVector(convertedNTVStructType))
+    assertTrue(CommonUtils.isSparseTensor(convertedNTVStructType))
     assertTrue(CommonUtils.isArrayOfLong(convertedNTVStructType(SPARSE_VECTOR_INDICES_FIELD_NAME).dataType))
     assertTrue(CommonUtils.isArrayOfFloat(convertedNTVStructType(SPARSE_VECTOR_VALUES_FIELD_NAME).dataType))
 

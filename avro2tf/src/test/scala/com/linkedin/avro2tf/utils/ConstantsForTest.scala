@@ -30,8 +30,10 @@ object ConstantsForTest {
   final val INPUT_TEXT_FILE_PATHS = "src/test/resources/data/text.avro"
   final val INPUT_TEXT_SEQ_FILE_PATHS = "src/test/resources/data/textSequence.avro"
   final val INPUT_SHARE_FEATURE_PATH = "src/test/resources/data/share_feat_list/test_share_feature_list.avro"
+  final val INPUT_FDS_PATH = "src/test/resources/data/FDS.avro"
   final val MIN_PARTS_VALUE = 100
   final val MIX_NTV_FEATURE_NAME = "fruits_day4"
+  final val METADATA_PATH_FDS = "src/test/resources/metadata/tensor_metadata_FDS.json"
   final val NUM_OUTPUT_FILES_VALUE = 3
   final val SAMPLE_EXTERNAL_FEATURE_LIST = "a\nb\nc\n"
   final val SKIP_CONVERSION_VALUE = "false"
@@ -72,9 +74,11 @@ object ConstantsForTest {
   final val WORKING_DIRECTORY_AVRO2TF = "/tmp/avro2tf-test"
   final val WORKING_DIRECTORY_AVRO2TF_MOVIELENS = "/tmp/avro2tf-test-movielens"
   final val WORKING_DIRECTORY_PARTITION_TEST = "/tmp/partition-test"
+  final val WORKING_DIRECTORY_AVRO2TF_FDS = "/tmp/avro2tf-test-FDS"
   final val EXPECTED_FEATURE_LIST_W_COUNTS_PATH = "data/share_feat_list/feat_lists_w_counts"
   final val EXPECTED_TENSOR_METADATA_GENERATED_JSON_PATH_TEXT = "metadata/tensor_metadata_text_1.json"
   final val EXPECTED_TENSOR_METADATA_MOVIELENS_RANK = "metadata/tensor_metadata_movielens_rank.json"
+  final val EXPECTED_TENSOR_METADATA_FDS_RANK = "metadata/tensor_metadata_FDS_rank.json"
   final val EXPECTED_TENSOR_METADATA_WITH_PARTITION_ID = "metadata/tensor_metadata_with_partition_id.json"
   final val EXPECTED_TENSOR_METADATA_WITHOUT_INT_FEATURES_GENERATED_JSON_PATH_TEXT =
     "metadata/tensor_metadata_text_without_int_features.json"

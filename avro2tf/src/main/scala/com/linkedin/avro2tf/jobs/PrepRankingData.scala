@@ -13,6 +13,7 @@ import io.circe.parser.{decode => jsondecode}
 import io.circe.syntax._
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.sql._
+import org.apache.spark.sql.expressions.UserDefinedFunction
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types.{ArrayType, DoubleType, FloatType, IntegerType, LongType, StringType, StructField, StructType, DataType => ADataType}
 import org.slf4j.{Logger, LoggerFactory}
@@ -122,12 +123,13 @@ object PrepRankingData {
     }
 
     // flatten indices of sparse tensors
-    val documentFeaturesWithSpVec = documentFeatures.filter(
-      it =>
-        CommonUtils.isArrayOfSparseVector(truncateDf.schema(it).dataType))
+    val sparseTensorFeatureNameAndRanks = documentFeatures
+      .filter(it => CommonUtils.isArrayOfSparseTensor(truncateDf.schema(it).dataType))
+      .map(it => // (sparse tensor name, rank)
+        (it, selectDf.schema(it).dataType.asInstanceOf[StructType].fieldNames.length - 1)) // decrease the dim of values
 
-    documentFeaturesWithSpVec.foreach { it =>
-      truncateDf = truncateDf.withColumn(it, twoDimensionSparseFeature(col(it)))
+    sparseTensorFeatureNameAndRanks.foreach { case (name, rank) =>
+      truncateDf = truncateDf.withColumn(name, toSparseFeatureWithRank(rank)(col(name)))
     }
 
     // write to disk
@@ -203,24 +205,45 @@ object PrepRankingData {
     )
   }
 
-  val twoDimensionSparseFeatureSchema = generateSchemaForMultiDimSparseFeature(2)
   /**
-   * udf to have 2d Sparse Feature. The input is expected to be [[SparseVector]] with indices and values
-   */
-  val twoDimensionSparseFeature =
+    * Based on the input rank N, generate an UDF to merge an array of Sparse Tensor into N + 1 dimension Sparse Tensor.
+    * The schema is defined in the [[generateSchemaForMultiDimSparseFeature()]].
+    * @param rank input rank, should be larger than 0
+    * @return a UDF to merge an array of Sparse Tensor into a Sparse Tensor with additional dimension.
+    */
+  def toSparseFeatureWithRank(rank: Int): UserDefinedFunction = {
     udf(
       (arrayOfSp: Seq[Row]) => {
-        val indices0 = mutable.ArrayBuffer[Long]()
-        val indices1 = mutable.ArrayBuffer[Long]()
+        val indices = Array.fill(rank + 1){mutable.ArrayBuffer[Long]()}
         val values = mutable.ArrayBuffer[Float]()
-        arrayOfSp.zipWithIndex.map { case (sp, index) =>
-          val currIndices = sp.getAs[Seq[Long]](Constants.INDICES)
-          indices0 ++= List.fill(currIndices.length)(index.toLong)
-          indices1 ++= currIndices
-          values ++= sp.getAs[Seq[Float]](Constants.VALUES)
-        }
-        Row(indices0, indices1, values)
-      }, twoDimensionSparseFeatureSchema)
+        arrayOfSp.zipWithIndex.foreach( rowAndIndex => {
+            val (row, index) = rowAndIndex
+            val valuesInRow = row.getAs[Seq[Float]](Constants.VALUES)
+            indices(0) ++= List.fill(valuesInRow.length)(index.toLong)
+            values ++= valuesInRow
+
+            // Support original Avro2TF sparse vector format.
+            // 2D sparse vector with fields
+            //   indices
+            //   values
+            if (rank == 1 && row.schema.fieldNames.contains(Constants.INDICES)) {
+              indices(1) ++= row.getAs[Seq[Long]](Constants.INDICES)
+            } else {
+              // support N dim sparse tensor use case.
+              // N-Dim Sparse Tensor with fields
+              // indices0, indices1, ..., indicesN
+              // values
+              (1 until indices.length).map(indexId => {
+                indices(indexId) ++= row.getAs[Seq[Long]](Constants.INDICES + (indexId - 1))
+              })
+            }
+          }
+        )
+
+        Row.fromSeq(indices.toSeq :+ values)
+      }, generateSchemaForMultiDimSparseFeature(rank + 1)) // rank + additional dim for grouping
+  }
+
 
   /**
    * From data schema to get correct udf
@@ -250,9 +273,7 @@ object PrepRankingData {
       filledArray.take(groupListMaxSize)
     }
 
-    def takeArrayFunc[T] = (array: Seq[Seq[T]]) => array.take(groupListMaxSize)
-
-    def takeSpFunc = (array: Seq[SparseVector]) => array.take(groupListMaxSize)
+    def takeWithAnyType = (array: Seq[Row]) => array.take(groupListMaxSize)
 
     val padValue = if (isLabel) {
       labelPaddingValue
@@ -266,12 +287,8 @@ object PrepRankingData {
       case _: IntegerType => udf(takeFunc[Int](padValue.toInt))
       case _: LongType => udf(takeFunc[Long](padValue.toLong))
       case _: StringType => udf(takeFunc[String](""))
-      case _: StructType => udf(takeSpFunc)
-      case ArrayType(FloatType, _) => udf(takeArrayFunc[Float])
-      case ArrayType(DoubleType, _) => udf(takeArrayFunc[Double])
-      case ArrayType(IntegerType, _) => udf(takeArrayFunc[Int])
-      case ArrayType(LongType, _) => udf(takeArrayFunc[Long])
-      case ArrayType(StringType, _) => udf(takeArrayFunc[String])
+      case structSchema: StructType => udf(takeWithAnyType, ArrayType(structSchema))
+      case arraySchema: ArrayType => udf(takeWithAnyType, ArrayType(arraySchema))
       case _ => throw new UnsupportedOperationException(s"Cannot support type: $dtype")
     }
   }

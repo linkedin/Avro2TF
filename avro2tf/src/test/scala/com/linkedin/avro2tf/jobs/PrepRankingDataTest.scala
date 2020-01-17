@@ -145,4 +145,47 @@ class PrepRankingDataTest extends WithLocalSparkSession {
     // verify padding is skipped
     assertTrue(df.select("response").collect().exists(row => row.getAs[Seq[Float]](0).size < 10))
   }
+
+  /**
+    * A unit test to test N dimensional dense and sparse Tensor input.
+    * The schema for N dimensional dense Tensor is the nested array.
+    * The schema for N dimensional sparse Tensor is
+    *   indices0: Array[Long]
+    *   indices1: Array[Long]
+    *   ...
+    *   indicesN: Array[Long]
+    *   values: Array[Float]
+    */
+  @Test
+  def testPrepRankingDataWithNDimTensor(): Unit = {
+    val workingDir = WORKING_DIRECTORY_AVRO2TF_FDS
+    FileUtils.deleteDirectory(new File(workingDir))
+
+    val dataOutputPath = s"$workingDir/rankingOutput"
+    val metadataOutputPath = s"$workingDir/rankingMetadataOutput"
+    val prepRankingParams = Map(
+      PrepRankingJobParamNames.INPUT_DATA_PATH -> INPUT_FDS_PATH,
+      PrepRankingJobParamNames.INPUT_METADATA_PATH -> METADATA_PATH_FDS,
+      PrepRankingJobParamNames.OUTPUT_DATA_PATH -> dataOutputPath,
+      PrepRankingJobParamNames.OUTPUT_METADATA_PATH -> metadataOutputPath,
+      PrepRankingJobParamNames.GROUP_ID_LIST -> "uid",
+      PrepRankingJobParamNames.GROUP_LIST_MAX_SIZE -> 10,
+      PrepRankingJobParamNames.EXECUTION_MODE -> "training",
+      PrepRankingJobParamNames.NUM_OUTPUT_FILES -> 1
+    )
+    val params = PrepRankingDataParamsParser.parse(TestUtil.convertParamMapToParamList(prepRankingParams))
+    PrepRankingData.run(session, params)
+
+    val outputMetadataFile = s"$metadataOutputPath/${Constants.TENSOR_METADATA_FILE_NAME}"
+    assertTrue(new File(s"$dataOutputPath/_SUCCESS").exists())
+    assertTrue(new File(outputMetadataFile).exists())
+    assertTrue(new File(s"$metadataOutputPath/${Constants.CONTENT_FEATURE_LIST}").exists())
+
+    // Check if tensor metadata JSON file is correctly generated
+    val expectedTensorMetadata = getClass.getClassLoader.getResource(EXPECTED_TENSOR_METADATA_FDS_RANK).getFile
+    assertEquals(
+      removeWhiteSpace(Source.fromFile(outputMetadataFile).mkString),
+      removeWhiteSpace(Source.fromFile(expectedTensorMetadata).mkString)
+    )
+  }
 }

@@ -47,7 +47,7 @@ object TensorMetadataGeneration {
         // after hashing, may already be SparseVector or array of floats
         (colsWithHashInfoNumUniqueValuesMapping.contains(colName) &&
           (CommonUtils.isArrayOfFloat(dataFrame.schema(colName).dataType) ||
-            CommonUtils.isSparseVector(dataFrame.schema(colName).dataType)))
+            CommonUtils.isSparseTensor(dataFrame.schema(colName).dataType)))
     ).toSet
 
     var featuresTensorMetadata = generateTensorMetadata(

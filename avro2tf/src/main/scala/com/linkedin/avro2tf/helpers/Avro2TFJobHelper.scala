@@ -204,7 +204,7 @@ object Avro2TFJobHelper {
 
     dataFrame.columns.foreach {
       columnName =>
-        if (CommonUtils.isSparseVector(dataFrameSchema(columnName).dataType)) {
+        if (CommonUtils.isSparseTensor(dataFrameSchema(columnName).dataType)) {
           // Construct two separate indices and values columns for SparseVector data type
           newConvertedColumns.append(expr(s"$columnName.$INDICES").alias(s"${columnName}_$INDICES"))
           newConvertedColumns.append(expr(s"$columnName.$VALUES").alias(s"${columnName}_$VALUES"))

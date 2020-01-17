@@ -48,33 +48,44 @@ object CommonUtils {
   }
 
   /**
-   * Check if the type of a column is an of sparse vector
+   * Check if the type is a sparse tensor.
+   *
+   * The schema of a sparse tensor can be either [[com.linkedin.avro2tf.jobs.Avro2TF.SparseVector]] or the following
+   * StructType
+   *   StructField: indices0
+   *   StructField: indices1
+   *   ...
+   *   StructField: indicesN
+   *   StructField: values
    *
    * @param dataType The schema type of a column
-   * @return is type of [[com.linkedin.avro2tf.jobs.Avro2TF.SparseVector]]
+   * @return is type of sparse tensor
    */
-  def isSparseVector(dataType: DataType): Boolean = {
+  def isSparseTensor(dataType: DataType): Boolean = {
 
     dataType match {
-      case sparseVectorType: StructType => sparseVectorType.fieldNames.length == 2 &&
-        sparseVectorType.fieldNames.contains(INDICES) &&
-        sparseVectorType.fieldNames.contains(VALUES)
+      case sparseTensorType: StructType => sparseTensorType.fieldNames.contains(VALUES) && (
+        (sparseTensorType.fieldNames.length == 2 && sparseTensorType.fieldNames.contains(INDICES)) ||
+          (sparseTensorType.fieldNames.length >= 2 &&
+            (0 until sparseTensorType.fieldNames.length - 1).map(i => INDICES + i)
+              .forall(sparseTensorType.fieldNames.contains))
+      )
       case _ => false
     }
   }
 
   /**
-   * Check if the type of a column is an array of sparse vector
+   * Check if the type of a column is an array of sparse tensor
    *
    * @param dataType The schema type of a column
-   * @return is array of [[com.linkedin.avro2tf.jobs.Avro2TF.SparseVector]]
+   * @return is array of sparse tensor
    */
-  def isArrayOfSparseVector(dataType: DataType): Boolean = {
+  def isArrayOfSparseTensor(dataType: DataType): Boolean = {
 
     dataType match {
       case arrayType: ArrayType =>
         arrayType.elementType match {
-          case sparseVectorType: StructType => isSparseVector(sparseVectorType)
+          case sparseTensorType: StructType => isSparseTensor(sparseTensorType)
           case _ => false
         }
       case _ => false

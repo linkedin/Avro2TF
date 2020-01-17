@@ -201,7 +201,7 @@ class Avro2TFTest extends WithLocalSparkSession {
 
     assertEquals(last.schema, lastFilterZero.schema)
 
-    val sparseVectorNames = last.schema.filter(elem => CommonUtils.isSparseVector(elem.dataType)).map(_.name)
+    val sparseVectorNames = last.schema.filter(elem => CommonUtils.isSparseTensor(elem.dataType)).map(_.name)
 
     sparseVectorNames.foreach {
       name =>
