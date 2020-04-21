@@ -2,6 +2,7 @@ package com.linkedin.avro2tf.jobs
 
 import java.io.OutputStreamWriter
 import java.nio.charset.StandardCharsets.UTF_8
+import java.util.regex.Pattern
 
 import scala.collection.mutable
 
@@ -277,6 +278,7 @@ object FeatureListGeneration {
     val tensorGroups = getTensorGroupsToWriteFeatureLists(params, fileSystem)
     val tmpFeatureListDir = s"${params.workingDir.rootPath}/$TMP_FEATURE_LIST"
     val vocabSizeCap = Avro2TFConfigHelper.getOutputTensorVocabSizeCap(params)
+    val pattern = Pattern.compile(SPLIT_REGEX)
     // merge and write feature lists for output tensors with shared feature list setting
     tensorGroups.foreach( // each element is an array containing the output tensor names sharing one feature list
       tensors => {
@@ -301,7 +303,7 @@ object FeatureListGeneration {
                     // the format of each line is feature_entry,count
                     // first get feature_entry, if need process prefix (ntv), remove prefix from feature_entry, make
                     // sure prefix is unique
-                    val words = line.split(SPLIT_REGEX)
+                    val words = pattern.split(line)
                     val lineWithoutCount = if (words.isEmpty) "" else words.head
                     val featureEntry = if (needProcessPrefix) {
                       val prefixSplit = lineWithoutCount.split(SEPARATOR_NAME_TERM)
