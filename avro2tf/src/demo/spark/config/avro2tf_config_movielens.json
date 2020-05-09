@@ -1,0 +1,119 @@
+{
+  "features": [
+    {
+      "inputFeatureInfo": {
+        "columnExpr": "user_id"
+      },
+      "outputTensorInfo": {
+        "name": "userId",
+        "dtype": "long",
+        "shape": [
+          -1
+        ]
+      }
+    },
+    {
+      "inputFeatureInfo": {
+        "columnExpr": "movie_id"
+      },
+      "outputTensorInfo": {
+        "name": "movieId",
+        "dtype": "long",
+        "shape": [
+          -1
+        ]
+      }
+    },
+    {
+      "inputFeatureInfo": {
+        "columnExpr": "user_id",
+        "transformConfig": {
+          "hashInfo": {
+            "hashBucketSize": 1000,
+            "numHashFunctions": 4
+          }
+        }
+      },
+      "outputTensorInfo": {
+        "name": "userId_hashed",
+        "dtype": "long",
+        "shape": [
+          4
+        ]
+      }
+    },
+    {
+      "inputFeatureInfo": {
+        "columnExpr": "movie_id",
+        "transformConfig": {
+          "hashInfo": {
+            "hashBucketSize": 1000,
+            "numHashFunctions": 4
+          }
+        }
+      },
+      "outputTensorInfo": {
+        "name": "movieId_hashed",
+        "dtype": "long",
+        "shape": [
+          4
+        ]
+      }
+    },
+    {
+      "inputFeatureInfo": {
+        "columnExpr": "user_features"
+      },
+      "outputTensorInfo": {
+        "name": "user_features",
+        "dtype": "float",
+        "shape": [],
+        "isSparse" : true
+      }
+    },
+    {
+      "inputFeatureInfo": {
+        "columnExpr": "movie_features"
+      },
+      "outputTensorInfo": {
+        "name": "movie_features",
+        "dtype": "float",
+        "shape": [],
+        "isSparse" : true
+      }
+    },
+    {
+      "inputFeatureInfo": {
+        "columnExpr": "user_emb_features.value"
+      },
+      "outputTensorInfo": {
+        "name": "user_embb_features",
+        "dtype": "float",
+        "shape": [64]
+      }
+    },
+    {
+      "inputFeatureInfo": {
+        "columnExpr": "movie_emb_features.value"
+      },
+      "outputTensorInfo": {
+        "name": "movie_embb_features",
+        "dtype": "float",
+        "shape": [64]
+      }
+    }
+
+  ],
+  "labels": [
+    {
+      "inputFeatureInfo": {
+        "columnExpr": "response"
+      },
+      "outputTensorInfo": {
+        "name": "response",
+        "dtype": "double",
+        "shape": []
+      }
+    }
+  ]
+}
