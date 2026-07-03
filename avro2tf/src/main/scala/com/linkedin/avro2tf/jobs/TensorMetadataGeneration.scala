@@ -31,7 +31,7 @@ object TensorMetadataGeneration {
    */
   def run(dataFrame: DataFrame, params: Avro2TFParams): Unit = {
 
-    // NOTE: Intellij does not realise this import is used.
+    // NOTE: Intellij does not realize this import is used.
     import com.linkedin.avro2tf.configs.JsonCodecs._
 
     val fileSystem = FileSystem.get(dataFrame.sparkSession.sparkContext.hadoopConfiguration)
