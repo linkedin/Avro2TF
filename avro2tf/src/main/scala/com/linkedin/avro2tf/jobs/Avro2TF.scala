@@ -8,7 +8,7 @@ import org.apache.spark.storage.StorageLevel
 import org.slf4j.{Logger, LoggerFactory}
 
 /**
- * The Avro2TF job is used to make users training data ready to be consumed by deep learning training frameworks like TensorFlow
+ * The Avro2TF job is used to make user's training data ready to be consumed by deep learning training frameworks like TensorFlow
  *
  */
 object Avro2TF {
